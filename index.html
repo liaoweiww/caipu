@@ -1058,6 +1058,55 @@ img { max-width: 100%; display: block; }
 .market-ingredient-row:active { background: var(--c-warm); }
 .market-ingredient-row .fav-btn { font-size: 18px; flex-shrink: 0; padding: 4px; }
 
+/* ====== 阶段7：采购台账 + 采购清单 ====== */
+.ledger-overlay {
+  position: fixed; inset: 0; z-index: 150;
+  max-width: 480px; margin: 0 auto;
+  background: var(--c-bg); overflow-y: auto;
+  display: none;
+}
+.ledger-overlay.show { display: block; }
+.ledger-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px var(--page-px); position: sticky; top: 0;
+  background: var(--c-bg); z-index: 5; border-bottom: 1px solid var(--c-border);
+}
+.ledger-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  padding: 14px var(--page-px);
+}
+.ledger-stat-card {
+  background: var(--c-surface); border-radius: var(--radius-md);
+  padding: 14px; text-align: center; box-shadow: var(--shadow-sm);
+}
+.ledger-stat-card__val { font-size: 22px; font-weight: 700; color: var(--c-primary-deep); }
+.ledger-stat-card__label { font-size: 11px; color: var(--c-text-light); margin-top: 4px; }
+.ledger-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px var(--page-px); border-bottom: 1px solid var(--c-border);
+}
+.ledger-item__emoji { font-size: 28px; flex-shrink: 0; }
+.ledger-item__info { flex: 1; }
+.ledger-item__name { font-size: 14px; font-weight: 600; }
+.ledger-item__detail { font-size: 11px; color: var(--c-text-secondary); margin-top: 2px; }
+.ledger-item__price { font-size: 15px; font-weight: 700; color: var(--c-primary-deep); }
+.category-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 0 var(--page-px) 14px; }
+.category-bar__seg { transition: width 0.3s; }
+
+/* 采购清单 */
+.shoplist-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px var(--page-px); border-bottom: 1px solid var(--c-border);
+}
+.shoplist-item__emoji { font-size: 24px; }
+.shoplist-item__info { flex: 1; }
+.shoplist-item__name { font-size: 14px; font-weight: 600; }
+.shoplist-item__qty { font-size: 13px; font-weight: 600; color: var(--c-primary-deep); }
+.shoplist-item__price { font-size: 11px; color: var(--c-text-light); }
+.shoplist-item__status { padding: 4px 10px; border-radius: var(--radius-xl); font-size: 11px; font-weight: 600; }
+.shoplist-item__status--pending { background: var(--c-warm); color: var(--c-text-secondary); }
+.shoplist-item__status--done { background: var(--c-secondary); color: #fff; }
+
 </style>
 </head>
 <body>
@@ -1547,6 +1596,31 @@ img { max-width: 100%; display: block; }
       <button class="btn-draft" id="btn-draft" style="display:none">保存草稿</button>
       <button class="btn-save" id="btn-save">💾 保存菜谱</button>
     </div>
+  </div>
+
+
+  <!-- ====== 采购台账 ====== -->
+  <div class="ledger-overlay" id="ledger-overlay">
+    <div class="ledger-header">
+      <button class="detail__back" onclick="closeLedger()">←</button>
+      <span style="flex:1;font-size:17px;font-weight:700">采购台账</span>
+      <button style="font-size:12px;color:var(--c-primary);font-weight:600" onclick="showToast('导出Excel — 后续开发')">📥 导出</button>
+    </div>
+    <div class="ledger-stats" id="ledger-stats"></div>
+    <div class="category-bar" id="category-bar"></div>
+    <div id="ledger-list"></div>
+  </div>
+
+  <!-- ====== 采购清单 ====== -->
+  <div class="ledger-overlay" id="shoplist-overlay">
+    <div class="ledger-header">
+      <button class="detail__back" onclick="closeShoplist()">←</button>
+      <span style="flex:1;font-size:17px;font-weight:700">采购清单</span>
+      <button style="font-size:12px;color:var(--c-primary);font-weight:600" onclick="showToast('分享微信 — 后续开发')">📤 分享</button>
+    </div>
+    <div style="padding:8px var(--page-px);text-align:center;font-size:12px;color:var(--c-text-light)" id="shoplist-date-range"></div>
+    <div class="ledger-stats" id="shoplist-stats"></div>
+    <div id="shoplist-items"></div>
   </div>
 
 </div><!-- #app -->
@@ -2843,6 +2917,170 @@ function updateHomeUsername() {
 
 // 在initAuth中调用
 var origUpdateUI = (function(){})();
+
+
+// ===================== 阶段7：采购台账 + 采购清单 =====================
+
+// ----- 采购台账 -----
+function openLedger() {
+  document.getElementById('ledger-overlay').classList.add('show');
+  loadLedgerData();
+}
+
+function closeLedger() {
+  document.getElementById('ledger-overlay').classList.remove('show');
+}
+
+async function loadLedgerData() {
+  const today = new Date();
+  const startDate = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`;
+  const endDate = today.toISOString().split('T')[0];
+
+  try {
+    // 统计
+    const statsRes = await fetch(`${API_BASE}/purchases/stats?tenant_id=test_tenant&start_date=${startDate}&end_date=${endDate}`);
+    const stats = await statsRes.json();
+
+    document.getElementById('ledger-stats').innerHTML = `
+      <div class="ledger-stat-card"><div class="ledger-stat-card__val">¥${stats.total_spend || 0}</div><div class="ledger-stat-card__label">💰 总支出</div></div>
+      <div class="ledger-stat-card"><div class="ledger-stat-card__val">${stats.purchase_count || 0}次</div><div class="ledger-stat-card__label">🛒 采购次数</div></div>
+      <div class="ledger-stat-card"><div class="ledger-stat-card__val">¥${stats.purchase_count ? (stats.total_spend / stats.purchase_count).toFixed(1) : 0}</div><div class="ledger-stat-card__label">📊 笔均</div></div>`;
+
+    // 分类条
+    const catColors = { '畜禽肉类':'#F5A0B0','鲜蔬类':'#A0D8C0','水产海鲜':'#A0C8E0','五谷干货':'#F5D0A0','调味佐料':'#C0A8E0','水果类':'#F0C8C0' };
+    const total = stats.total_spend || 1;
+    const byCat = stats.by_category || [];
+    document.getElementById('category-bar').innerHTML = byCat.map(c => {
+      const pct = Math.max((c.subtotal / total) * 100, 2);
+      return `<div class="category-bar__seg" style="width:${pct}%;background:${catColors[c.category1]||'#ddd'}" title="${c.category1}: ¥${c.subtotal}"></div>`;
+    }).join('');
+
+    // 列表
+    const res = await fetch(`${API_BASE}/purchases?tenant_id=test_tenant&start_date=${startDate}&end_date=${endDate}`);
+    const data = await res.json();
+    const list = data.data || [];
+    document.getElementById('ledger-list').innerHTML = list.length
+      ? list.map(p => `
+        <div class="ledger-item">
+          <span class="ledger-item__emoji">${p.ingredient_emoji || '📦'}</span>
+          <div class="ledger-item__info">
+            <div class="ledger-item__name">${p.ingredient_name || p.ingredient_id}</div>
+            <div class="ledger-item__detail">${p.purchase_date} · ${p.location || ''} · ${p.quantity}${p.unit||'斤'} × ¥${p.price}</div>
+          </div>
+          <span class="ledger-item__price">¥${p.total_price}</span>
+        </div>`).join('')
+      : '<div class="empty-state"><div class="empty-state__icon">📋</div><div class="empty-state__text">本月还没有采购记录</div><div class="empty-state__hint">去菜场录入第一笔吧</div></div>';
+  } catch (e) {
+    document.getElementById('ledger-list').innerHTML = '<div class="empty-state"><div class="empty-state__text">API 未连接</div></div>';
+  }
+}
+
+// 从菜场顶部进入台账
+// 在菜场页头添加台账按钮
+(function addLedgerEntry() {
+  var hdr = document.querySelector('#page-market .page-header__title');
+  if (hdr && !document.getElementById('btn-ledger')) {
+    var btn = document.createElement('button');
+    btn.id = 'btn-ledger';
+    btn.textContent = '📋 台账';
+    btn.style.cssText = 'font-size:12px;font-weight:600;color:#fff;background:var(--c-primary);padding:4px 12px;border-radius:var(--radius-xl)';
+    btn.onclick = openLedger;
+    hdr.parentElement.appendChild(btn);
+  }
+})();
+
+// ----- 采购清单（从点菜生成）-----
+function openShoplist() {
+  document.getElementById('shoplist-overlay').classList.add('show');
+  loadShoplist();
+}
+
+function closeShoplist() {
+  document.getElementById('shoplist-overlay').classList.remove('show');
+}
+
+async function loadShoplist() {
+  // 按本周汇总
+  const today = new Date();
+  const dow = today.getDay();
+  const monday = new Date(today); monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+  const startDate = monday.toISOString().split('T')[0];
+  const endDate = sunday.toISOString().split('T')[0];
+  document.getElementById('shoplist-date-range').textContent = `${startDate} ~ ${endDate}`;
+
+  // 汇总所有plan中的recipe ingredients
+  var ingredientMap = {};
+  try {
+    const res = await fetch(`${API_BASE}/meal-plans?tenant_id=test_tenant&start_date=${startDate}&end_date=${endDate}`);
+    const data = await res.json();
+    var plans = data.data || [];
+    var totalEstimate = 0;
+
+    for (var p of plans) {
+      if (!p.recipe_id) continue;
+      try {
+        var rRes = await fetch(`${API_BASE}/recipes/${p.recipe_id}`);
+        var recipe = await rRes.json();
+        var ings = recipe.ingredients || [];
+        for (var ing of ings) {
+          var key = ing.ingredient_id;
+          if (!ingredientMap[key]) {
+            ingredientMap[key] = { name: ing.ingredient_name || key, emoji: ing.ingredient_emoji || '📦', amount: 0, unit: ing.unit || '', price: 0, done: false };
+          }
+          ingredientMap[key].amount += (ing.amount || 0) * (p.servings || 4) / (recipe.servings || 4);
+        }
+      } catch (e) {}
+    }
+
+    var items = Object.values(ingredientMap);
+    // 获取最近采购价
+    for (var item of items) {
+      try {
+        var priceRes = await fetch(`${API_BASE}/purchases?ingredient_id=${Object.keys(ingredientMap).find(k => ingredientMap[k] === item)}`);
+        var priceData = await priceRes.json();
+        if (priceData.data && priceData.data.length) {
+          item.price = priceData.data[0].price;
+          totalEstimate += item.price * item.amount;
+        }
+      } catch (e) {}
+    }
+
+    document.getElementById('shoplist-stats').innerHTML = `
+      <div class="ledger-stat-card"><div class="ledger-stat-card__val">${items.length}种</div><div class="ledger-stat-card__label">📦 食材种类</div></div>
+      <div class="ledger-stat-card"><div class="ledger-stat-card__val">${plans.length}餐</div><div class="ledger-stat-card__label">🍽 规划餐数</div></div>
+      <div class="ledger-stat-card"><div class="ledger-stat-card__val">¥${totalEstimate.toFixed(0)}</div><div class="ledger-stat-card__label">💰 预估花费</div></div>`;
+
+    document.getElementById('shoplist-items').innerHTML = items.length
+      ? items.map((item, i) => `
+        <div class="shoplist-item" onclick="openPurchaseModal('${Object.keys(ingredientMap)[i]}','${item.name}','${item.emoji}','${item.unit}')">
+          <span class="shoplist-item__emoji">${item.emoji}</span>
+          <div class="shoplist-item__info">
+            <div class="shoplist-item__name">${item.name}</div>
+            <div class="shoplist-item__price">上次采购价: ¥${item.price || '--'}${item.price ? '/斤' : ''}</div>
+          </div>
+          <span class="shoplist-item__qty">${item.amount.toFixed(0)}${item.unit || '份'}</span>
+          <span class="shoplist-item__status shoplist-item__status--${item.done ? 'done' : 'pending'}">${item.done ? '已购' : '待购'}</span>
+        </div>`).join('')
+      : '<div class="empty-state"><div class="empty-state__icon">🛒</div><div class="empty-state__text">本周还没有点菜规划</div><div class="empty-state__hint">先去点菜页面规划菜单吧</div></div>';
+  } catch (e) {
+    document.getElementById('shoplist-items').innerHTML = '<div class="empty-state"><div class="empty-state__text">加载失败</div></div>';
+  }
+}
+
+// 点菜顶部加采购清单入口
+(function addShoplistEntry() {
+  var topbar = document.querySelector('.meal-topbar');
+  if (topbar) {
+    var btn = topbar.querySelector('button');
+    // 替换第一个按钮
+    var shopBtn = document.createElement('button');
+    shopBtn.textContent = '🛒 采购清单';
+    shopBtn.onclick = openShoplist;
+    shopBtn.style.cssText = 'background:var(--c-primary)!important;color:#fff!important';
+    topbar.insertBefore(shopBtn, topbar.firstChild);
+  }
+})();
 
 </script>
 
