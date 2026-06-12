@@ -41,5 +41,5 @@ def health_check():
 
 @app.route('/')
 def index():
-    root = os.path.join(os.path.dirname(__file__), '..')
+    root = os.path.join(os.path.dirname(__file__), '..', '..')
     return send_from_directory(root, 'index.html')
