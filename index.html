@@ -1696,7 +1696,6 @@ function navigateTo(tab) {
 
   // 按需渲染
   if (tab === 'recipes') renderRecipes();
-  if (tab === 'meals') renderMeals();
 }
 
 // 导航点击事件
@@ -1745,101 +1744,8 @@ recipeSearch.addEventListener('input', () => {
   }, 300);
 });
 
-// ----- 拿手菜：渲染 -----
-function renderRecipes() {
-  const container = document.getElementById('recipe-container');
-  const empty = document.getElementById('recipe-empty');
-
-  let filtered = state.recipes;
-  // 标签过滤
-  if (state.currentTag === 'personal') filtered = filtered.filter(r => r.tag === 'personal');
-  else if (state.currentTag === 'family') filtered = filtered.filter(r => r.tag === 'family');
-  else if (state.currentTag === 'learning') filtered = filtered.filter(r => r.tag === 'learning');
-  // 分类过滤
-  if (state.currentCat !== 'all' && state.currentCat !== 'fav') filtered = filtered.filter(r => r.category === state.currentCat);
-  if (state.currentCat === 'fav') filtered = filtered.filter(r => r.isFavorited);
-  // 搜索过滤
-  if (state.searchQuery) {
-    const q = state.searchQuery.toLowerCase();
-    filtered = filtered.filter(r => r.name.toLowerCase().includes(q));
-  }
-
-  document.getElementById('dish-count').textContent = `共 ${filtered.length} 道菜`;
-
-  if (filtered.length === 0) {
-    container.innerHTML = '';
-    container.style.display = 'none';
-    empty.style.display = 'flex';
-  } else {
-    empty.style.display = 'none';
-    container.style.display = 'grid';
-    // 视图模式
-    container.className = state.viewMode === 'list' ? 'recipe-list' : `recipe-grid ${state.viewMode}`;
-
-    if (state.viewMode === 'list') {
-      container.innerHTML = filtered.map(r => `
-        <div class="recipe-item">
-          <span class="recipe-item__emoji">${r.emoji}</span>
-          <div class="recipe-item__info">
-            <div class="recipe-item__name">${r.name}</div>
-            <div class="recipe-item__meta">${r.difficulty === 'easy' ? '简单' : r.difficulty === 'hard' ? '困难' : '中等'} · ${r.cookTime}</div>
-          </div>
-          <span style="color:var(--c-text-light);font-size:12px">›</span>
-        </div>
-      `).join('');
-    } else {
-      container.innerHTML = filtered.map(r => `
-        <div class="recipe-card">
-          <div class="recipe-card__img">${r.emoji}</div>
-          <div class="recipe-card__body">
-            <div class="recipe-card__name">${r.name}</div>
-            <div class="recipe-card__meta">
-              <span>${r.difficulty === 'easy' ? '⭐' : r.difficulty === 'hard' ? '⭐⭐⭐' : '⭐⭐'}</span>
-              <span>${r.cookTime}</span>
-            </div>
-          </div>
-        </div>
-      `).join('');
-    }
-  }
-}
-
-// ----- 点菜：周日历渲染 -----
-function renderMeals() {
-  const strip = document.getElementById('week-strip');
-  const today = new Date();
-  const dayNames = ['一', '二', '三', '四', '五', '六', '日'];
-  let html = '';
-
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(state.weekStart);
-    d.setDate(d.getDate() + i);
-    const isToday = d.toDateString() === today.toDateString();
-    const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
-    html += `
-      <div style="flex-shrink:0;width:44px;text-align:center;padding:6px 0;border-radius:var(--radius-md);
-        ${isToday ? 'background:var(--c-primary-light);border:1.5px solid var(--c-primary);' : 'background:var(--c-surface);'}
-        ${d.getDay() === state.selectedDay ? 'box-shadow:var(--shadow-md);' : ''}">
-        <div style="font-size:11px;color:var(--c-text-light)">${dayNames[i]}</div>
-        <div style="font-size:16px;font-weight:700;margin-top:2px">${d.getDate()}</div>
-        <div style="display:flex;gap:2px;justify-content:center;margin-top:3px">
-          <span style="width:5px;height:5px;border-radius:50%;background:var(--c-secondary)"></span>
-          <span style="width:5px;height:5px;border-radius:50%;background:var(--c-peach)"></span>
-          <span style="width:5px;height:5px;border-radius:50%;background:var(--c-accent)"></span>
-        </div>
-      </div>`;
-  }
-  strip.innerHTML = html;
-}
 
 // ----- 菜场：标签切换 -----
-document.querySelectorAll('#market-tags .tag-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    document.querySelectorAll('#market-tags .tag-chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    state.marketTag = chip.dataset.tag;
-    // 阶段4完善
-  });
 });
 
 // ----- Toast -----
@@ -2335,12 +2241,10 @@ const origNavigateTo = navigateTo;
 navigateTo = function(tab) {
   origNavigateTo(tab);
   if (tab === 'recipes') fetchRecipes();
-  if (tab === 'meals') renderMeals();
 };
 
 // ----- 初始化加载 -----
 fetchRecipes();
-renderMeals();
 
 
 // ===================== 阶段3：点菜 =====================
