@@ -91,7 +91,8 @@ def create_recipe():
     recipe_id = f"rec_{uuid.uuid4().hex[:10]}"
     with get_db() as conn:
         cur = conn.cursor()
-        flavor_tags = json.dumps(body.get('flavor_tags', []), ensure_ascii=False)
+        ft = body.get('flavor_tags', [])
+        flavor_tags = ft if isinstance(ft, str) else json.dumps(ft, ensure_ascii=False)
         cur.execute(
             "INSERT INTO recipes (id, name, image, tenant_id, owner_id, status, category, "
             "difficulty, cook_time, flavor_tags, meat_type, servings, staple_weight, "
@@ -117,7 +118,8 @@ def update_recipe(recipe_id):
         if not cur.fetchone():
             return jsonify({"error": "菜谱不存在"}), 404
 
-        flavor_tags = json.dumps(body.get('flavor_tags', []), ensure_ascii=False)
+        ft = body.get('flavor_tags', [])
+        flavor_tags = ft if isinstance(ft, str) else json.dumps(ft, ensure_ascii=False)
         cur.execute(
             "UPDATE recipes SET name=%s, image=%s, tenant_id=%s, status=%s, category=%s, "
             "difficulty=%s, cook_time=%s, flavor_tags=%s, meat_type=%s, servings=%s, "
@@ -145,6 +147,15 @@ def delete_recipe(recipe_id):
 
 
 # ----- 食材子表 -----
+@recipes_bp.route('/<recipe_id>/ingredients', methods=['DELETE'])
+def clear_ingredients(recipe_id):
+    """清空菜谱所有食材（编辑时先删再增）"""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM recipe_ingredients WHERE recipe_id = %s", (recipe_id,))
+        return jsonify({"message": "已清空"})
+
+
 @recipes_bp.route('/<recipe_id>/ingredients', methods=['POST'])
 def add_ingredient(recipe_id):
     body = request.get_json()
@@ -182,6 +193,15 @@ def delete_ingredient(recipe_id, ing_id):
 
 
 # ----- 步骤子表 -----
+@recipes_bp.route('/<recipe_id>/steps', methods=['DELETE'])
+def clear_steps(recipe_id):
+    """清空菜谱所有步骤（编辑时先删再增）"""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM recipe_steps WHERE recipe_id = %s", (recipe_id,))
+        return jsonify({"message": "已清空"})
+
+
 @recipes_bp.route('/<recipe_id>/steps', methods=['POST'])
 def add_step(recipe_id):
     body = request.get_json()
