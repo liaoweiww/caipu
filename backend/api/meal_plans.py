@@ -34,34 +34,21 @@ def list_plans():
 
 @meal_plans_bp.route('', methods=['POST'])
 def upsert_plan():
-    """新增/更新单餐（同人同天同餐段覆盖）"""
+    """新增单餐（允许同餐段多道菜）"""
     body = request.get_json()
     with get_db() as conn:
         cur = conn.cursor()
-        # 查找是否已存在
+        plan_id = f"mp_{uuid.uuid4().hex[:10]}"
         cur.execute(
-            "SELECT id FROM meal_plans WHERE tenant_id=%s AND plan_date=%s AND meal_type=%s",
-            (body['tenant_id'], body['plan_date'], body['meal_type'])
+            "INSERT INTO meal_plans (id, tenant_id, plan_date, meal_type, recipe_id, servings, created_by) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s)",
+            (plan_id, body['tenant_id'], body['plan_date'], body['meal_type'],
+             body.get('recipe_id'), body.get('servings', 4), body.get('created_by'))
         )
-        existing = cur.fetchone()
-        if existing:
-            cur.execute(
-                "UPDATE meal_plans SET recipe_id=%s, servings=%s WHERE id=%s",
-                (body.get('recipe_id'), body.get('servings', 4), existing['id'])
-            )
-            return jsonify({"id": existing['id'], "message": "更新成功"})
-        else:
-            plan_id = f"mp_{uuid.uuid4().hex[:10]}"
-            cur.execute(
-                "INSERT INTO meal_plans (id, tenant_id, plan_date, meal_type, recipe_id, servings, created_by) "
-                "VALUES (%s,%s,%s,%s,%s,%s,%s)",
-                (plan_id, body['tenant_id'], body['plan_date'], body['meal_type'],
-                 body.get('recipe_id'), body.get('servings', 4), body.get('created_by'))
-            )
-            # 菜谱做过次数 +1
-            if body.get('recipe_id'):
-                cur.execute("UPDATE recipes SET cook_count = cook_count + 1 WHERE id = %s", (body['recipe_id'],))
-            return jsonify({"id": plan_id, "message": "创建成功"}), 201
+        # 菜谱做过次数 +1
+        if body.get('recipe_id'):
+            cur.execute("UPDATE recipes SET cook_count = cook_count + 1 WHERE id = %s", (body['recipe_id'],))
+        return jsonify({"id": plan_id, "message": "创建成功"}), 201
 
 
 @meal_plans_bp.route('/<plan_id>', methods=['DELETE'])
