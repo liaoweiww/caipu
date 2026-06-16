@@ -243,8 +243,8 @@ def seed_ingredients():
             if cur.fetchone():
                 continue  # 已存在，跳过
             cur.execute(
-                "INSERT INTO ingredients (id, name, emoji, category1, category2, unit, storage, shelf_life_days, is_system) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1)",
+                "INSERT INTO ingredients (id, name, emoji, category1, category2, category3, unit, storage, shelf_life_days, is_system) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 1)",
                 ing
             )
             count += 1

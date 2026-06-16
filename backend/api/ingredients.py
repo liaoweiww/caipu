@@ -62,11 +62,11 @@ def create_ingredient():
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO ingredients (id, name, emoji, category1, category2, unit, storage, is_system, created_by) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s)",
-            (ing_id, body['name'], body.get('emoji', '📦'), body.get('category1', ''),
-             body.get('category2', ''), body.get('unit', '斤'), body.get('storage', 'room'),
-             body.get('created_by', ''))
+            "INSERT INTO ingredients (id, name, emoji, image, category1, category2, unit, storage, is_system, created_by) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0, %s)",
+            (ing_id, body['name'], body.get('emoji', '📦'), body.get('image', ''),
+             body.get('category1', ''), body.get('category2', ''), body.get('unit', '斤'),
+             body.get('storage', 'room'), body.get('created_by', ''))
         )
         return jsonify({"id": ing_id, "message": "创建成功"}), 201
 
@@ -103,3 +103,25 @@ def delete_ingredient(ingredient_id):
             return jsonify({"error": "系统食材不可删除"}), 403
         cur.execute("DELETE FROM ingredients WHERE id = %s", (ingredient_id,))
         return jsonify({"message": "删除成功"})
+
+
+@ingredients_bp.route('/prices', methods=['GET'])
+def ingredient_prices():
+    """每个食材的最新购买价格和均价"""
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT p.ingredient_id, MAX(p.price) as latest_price, AVG(p.price) as avg_price, "
+            "MAX(p.purchase_date) as last_date "
+            "FROM purchases p WHERE p.price > 0 "
+            "GROUP BY p.ingredient_id"
+        )
+        rows = cur.fetchall()
+        result = {}
+        for row in rows:
+            result[row['ingredient_id']] = {
+                'latest': float(row['latest_price']) if row['latest_price'] else None,
+                'avg': round(float(row['avg_price']), 1) if row['avg_price'] else None,
+                'last_date': str(row['last_date']) if row['last_date'] else None
+            }
+        return jsonify(result)

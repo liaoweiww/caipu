@@ -1618,14 +1618,12 @@ img { max-width: 100%; display: block; }
     <div class="tag-bar" id="market-tag-bar">
       <button class="tag-chip active" data-mtag="frequent">❤️ 我的常买</button>
       <button class="tag-chip" data-mtag="all">📂 全部分类</button>
-    </div>
-    <div class="search-bar">
-      <span class="search-bar__icon">🔍</span>
-      <input class="search-bar__input" type="text" placeholder="搜索食材…" id="market-search-input">
+      <button class="tag-chip" data-mtag="fridge">🧊 冰箱库存</button>
     </div>
     <div id="market-content"></div>
-    <div style="padding:12px var(--page-px)">
+    <div style="padding:12px var(--page-px);display:flex;flex-direction:column;gap:8px">
       <button style="width:100%;padding:12px;background:var(--c-primary);color:#fff;border-radius:var(--radius-lg);font-size:14px;font-weight:600" onclick="showCustomIngredientForm()">＋ 新增自定义食材</button>
+      <button style="width:100%;padding:10px;background:var(--c-surface);color:var(--c-text-secondary);border:1px solid var(--c-border);border-radius:var(--radius-lg);font-size:13px" onclick="manageMarketLocs()">📍 管理买菜地点</button>
     </div>
   </div>
 
@@ -1662,6 +1660,22 @@ img { max-width: 100%; display: block; }
       <div class="purchase-row">
         <label>备注</label>
         <input type="text" id="pur-note" placeholder="选填">
+      </div>
+      <div id="pur-history" style="margin-top:8px;display:none">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer" onclick="var t=document.getElementById('pur-history-body');t.style.display=t.style.display==='none'?'block':'none';var c=document.getElementById('pur-chart');c.style.display=t.style.display==='none'?'none':'block';this.querySelector('.arr').textContent=t.style.display==='none'?'▸':'▾'">
+          <span class="arr" style="font-size:12px">▾</span>
+          <span style="font-size:12px;font-weight:600;color:var(--c-text)">📈 价格走势</span>
+          <span id="pur-avg-badge" style="margin-left:auto;font-size:11px;padding:2px 8px;border-radius:var(--radius-full);background:var(--c-primary-light);color:var(--c-primary-deep);font-weight:600;display:none"></span>
+        </div>
+        <canvas id="pur-chart" width="360" height="100" style="width:100%;height:100px;border-radius:var(--radius-sm);margin-bottom:6px"></canvas>
+        <div id="pur-history-body" style="max-height:150px;overflow-y:auto">
+          <table style="width:100%;font-size:11px;border-collapse:collapse">
+            <thead><tr style="color:var(--c-text-light);text-align:left;border-bottom:1px solid var(--c-border)">
+              <th style="padding:4px">日期</th><th style="padding:4px">单价</th><th style="padding:4px">数量</th><th style="padding:4px">总价</th><th style="padding:4px">地点</th>
+            </tr></thead>
+            <tbody id="pur-history-tbody"></tbody>
+          </table>
+        </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px">
         <button class="btn-cancel" style="flex:1;padding:12px;border-radius:var(--radius-lg);font-size:14px;font-weight:600" onclick="closePurchaseModal()">取消</button>
@@ -1741,7 +1755,7 @@ img { max-width: 100%; display: block; }
         <div class="settings-item__left"><span class="settings-item__icon">⚙️</span><span class="settings-item__label">偏好设置</span></div>
         <span class="settings-item__arrow">›</span>
       </div>
-      <div class="settings-item" onclick="showFridgeManager()">
+      <div class="settings-item" onclick="navigateTo('market');document.querySelectorAll('#market-tag-bar .tag-chip').forEach(function(b){b.classList.toggle('active',b.dataset.mtag==='fridge')});marketTag='fridge';renderMarket()">
         <div class="settings-item__left"><span class="settings-item__icon">🧊</span><span class="settings-item__label">冰箱库存</span></div>
         <span class="settings-item__arrow">›</span>
       </div>
@@ -2826,7 +2840,8 @@ async function doIngredientSearch(query, cfg, dropdown) {
         html += '<div class="search-result-item" data-id="' + ing.id + '" data-name="' + ing.name + '" data-emoji="' + (ing.emoji || '📦') + '" data-unit="' + (ing.unit || '适量') + '" data-cat="' + cfg.cat + '" onclick="selectSearchResultItem(this, ING_CATEGORIES.find(function(c){return c.cat===\'' + cfg.cat + '\'}))">';
         html += '<span style="font-size:16px">' + (ing.emoji || '📦') + '</span>';
         html += '<span style="flex:1;font-weight:500">' + ing.name + '</span>';
-        html += '<span class="sr-cat">' + (ing.category2 || ing.category1 || '') + '</span>';
+        var catText = ing.category2 ? (ing.category2 + (ing.category3 ? ' · ' + ing.category3 : '')) : (ing.category1 || '');
+        html += '<span class="sr-cat">' + catText + '</span>';
         html += '</div>';
       });
     } else {
@@ -3857,12 +3872,101 @@ let marketData = []; // 食材缓存
 let marketTag = 'frequent'; // frequent | all
 let marketSearch = '';
 let purchaseIngId = '';
+let marketFavs = loadLib('market_favs', []); // 常买收藏
+let marketLocations = loadLib('market_locs', ['菜市场','超市','线上']); // 买菜地点
+let marketDefaultLoc = localStorage.getItem('caipu_default_loc') || marketLocations[0]; // 默认菜市场
+
+function renderMarketLocDropdown() {
+  var sel = document.getElementById('market-loc-select');
+  if (!sel) return;
+  sel.innerHTML = marketLocations.map(function(l) { return '<option value="' + l + '" ' + (l === marketDefaultLoc ? 'selected' : '') + '>📍' + l + '</option>'; }).join('');
+}
+function setDefaultLoc(name) {
+  marketDefaultLoc = name;
+  localStorage.setItem('caipu_default_loc', name);
+  renderMarketLocDropdown();
+}
+function manageMarketLocs() {
+  var html = '<div style="padding:16px var(--page-px)"><h3 style="font-family:var(--font-title);margin-bottom:12px">📍 管理买菜地点</h3>';
+  html += '<div style="display:flex;gap:6px;margin-bottom:10px"><input class="form-input" id="new-loc-name" placeholder="输入新地点名称" style="flex:1"><button onclick="addMarketLocFromInput()" style="padding:8px 14px;background:var(--c-primary);color:#fff;border-radius:var(--radius-sm);font-size:13px;white-space:nowrap">添加</button></div>';
+  html += '<div style="max-height:200px;overflow-y:auto">';
+  marketLocations.forEach(function(l) {
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-bottom:1px solid var(--c-border)"><span>' + l + (l === marketDefaultLoc ? ' ⭐默认' : '') + '</span><div style="display:flex;gap:6px">';
+    if (l !== marketDefaultLoc) html += '<button onclick="setDefaultLoc(\'' + l + '\');closeModalSheet()" style="font-size:11px;color:var(--c-primary);padding:2px 8px;border-radius:var(--radius-sm);border:1px solid var(--c-primary)">设为默认</button>';
+    html += '<button onclick="deleteMarketLoc(\'' + l + '\');manageMarketLocs()" style="font-size:11px;color:var(--c-danger);padding:2px 8px;border-radius:var(--radius-sm);border:1px solid var(--c-danger)">删除</button></div></div>';
+  });
+  html += '</div><div style="text-align:center;margin-top:10px"><button onclick="closeModalSheet()" style="padding:10px 30px;background:var(--c-warm);border-radius:var(--radius-lg);font-size:14px">关闭</button></div></div>';
+  openModalSheet(html);
+}
+function addMarketLocFromInput() {
+  var input = document.getElementById('new-loc-name');
+  var name = input ? input.value.trim() : '';
+  if (!name) { showToast('请输入名称'); return; }
+  if (marketLocations.indexOf(name) >= 0) { showToast('已存在'); return; }
+  marketLocations.push(name);
+  saveLib('market_locs', marketLocations);
+  renderMarketLocDropdown();
+  manageMarketLocs();
+}
+function deleteMarketLoc(name) {
+  var idx = marketLocations.indexOf(name);
+  if (idx >= 0) marketLocations.splice(idx, 1);
+  if (marketDefaultLoc === name) { marketDefaultLoc = marketLocations[0] || ''; localStorage.setItem('caipu_default_loc', marketDefaultLoc); }
+  saveLib('market_locs', marketLocations);
+  renderMarketLocDropdown();
+}
+function addMarketLoc() { /* 保留兼容 */ }
+function addMarketLoc() {
+  var name = prompt('添加买菜地点名称：');
+  if (!name || !name.trim()) return;
+  name = name.trim();
+  if (marketLocations.indexOf(name) >= 0) { showToast('已存在'); return; }
+  marketLocations.push(name);
+  saveLib('market_locs', marketLocations);
+  renderMarketLocDropdown();
+}
+function deleteMarketLoc(name) {
+  var idx = marketLocations.indexOf(name);
+  if (idx >= 0) marketLocations.splice(idx, 1);
+  if (marketDefaultLoc === name) { marketDefaultLoc = marketLocations[0] || ''; localStorage.setItem('caipu_default_loc', marketDefaultLoc); }
+  saveLib('market_locs', marketLocations);
+  renderMarketLocDropdown();
+}
+renderMarketLocDropdown();
+
+function isMarketFaved(id) { return marketFavs.indexOf(id) >= 0; }
+function toggleMarketFav(id, el) {
+  el.style.pointerEvents = 'none';
+  var idx = marketFavs.indexOf(id);
+  if (idx >= 0) { marketFavs.splice(idx, 1); el.textContent = '♡'; }
+  else { marketFavs.push(id); el.textContent = '❤️'; }
+  saveLib('market_favs', marketFavs);
+  if (marketTag === 'frequent') renderMarket();
+  el.style.pointerEvents = '';
+}
+
+// 菜场二级分类折叠
+function toggleMarketSub(subId, header) {
+  var body = document.getElementById(subId);
+  var arrow = header.querySelector('.sub-arrow');
+  if (!body || !arrow) return;
+  var open = body.style.display !== 'block';
+  body.style.display = open ? 'block' : 'none';
+  arrow.textContent = open ? '▾' : '▸';
+}
+
+let marketPrices = {};
 
 async function loadMarket() {
   try {
     const res = await fetch(`${API_BASE}/ingredients`);
     marketData = (await res.json()).data || [];
   } catch (e) {}
+  // 加载历史价格
+  try {
+    const pr = await fetch(`${API_BASE}/ingredients/prices`);
+    marketPrices = await pr.json();
+  } catch(e) { marketPrices = {}; }
   renderMarket();
 }
 
@@ -3875,17 +3979,49 @@ function renderMarket() {
   }
 
   if (marketTag === 'frequent') {
-    // 我的常买 - show ingredients with purchases or favorited
-    filtered = filtered.slice(0, 20); // simplified
-    container.innerHTML = filtered.length
-      ? filtered.map(i => `
-        <div class="market-ingredient-row" onclick="openPurchaseModal('${i.id}','${i.name}','${i.emoji}','${i.unit}')">
-          <span style="font-size:24px">${i.emoji || '📦'}</span>
-          <div style="flex:1"><div style="font-size:14px;font-weight:600">${i.name}</div><div style="font-size:11px;color:var(--c-text-light)">${i.category1} · ${i.category2}</div></div>
-          <span class="fav-btn">❤️</span>
-          <span style="color:var(--c-text-light);font-size:12px">›</span>
-        </div>`).join('')
-      : '<div class="empty-state"><div class="empty-state__icon">🛒</div><div class="empty-state__text">还没有常买食材</div><div class="empty-state__hint">去全部分类添加 ❤️</div></div>';
+    // 我的常买 — 只显示收藏的，按二级分类分组，默认展开
+    filtered = filtered.filter(function(i) { return isMarketFaved(i.id); });
+    if (filtered.length) {
+      var freqCats = {};
+      var fci = 0;
+      filtered.forEach(function(i) { var sc = i.category2 || i.category1 || '其他'; if (!freqCats[sc]) freqCats[sc] = []; freqCats[sc].push(i); });
+      container.innerHTML = Object.keys(freqCats).map(function(sc) {
+        var items = freqCats[sc];
+        var fid = 'freq-' + fci++;
+        return '<div style="margin-bottom:10px">' +
+          '<div style="font-size:11px;font-weight:600;color:var(--c-text-secondary);padding:4px 4px 6px;cursor:pointer;display:flex;align-items:center;gap:4px" onclick="toggleMarketSub(\'' + fid + '\',this)">' +
+          '<span class="sub-arrow" style="font-size:10px">▾</span> ' + sc + ' (' + items.length + ')</div>' +
+          '<div id="' + fid + '">' +
+          items.map(i => `
+            <div class="market-ingredient-row" onclick="openPurchaseModal('${i.id}','${i.name}','${i.emoji}','${i.unit}')">
+              ${i.image ? '<span style="width:40px;height:40px;border-radius:8px;background-image:url('+i.image+');background-size:cover;background-position:center;flex-shrink:0"></span>' : '<span style="font-size:22px">'+(i.emoji||'📦')+'</span>'}
+              <div style="flex:1"><span style="font-size:14px;font-weight:600">${i.name}</span><span style="font-size:10px;color:var(--c-text-light);margin-left:4px">${i.category3||''}</span></div>
+              <span style="color:var(--c-text-light);font-size:10px">${i.unit||'斤'}</span>${marketPrices[i.id] ? '<span style="font-size:9px;color:var(--c-accent);margin-left:2px">均价¥'+marketPrices[i.id].avg+'</span>' : ''}${i.reference_price ? '<span style="font-size:9px;color:var(--c-text-light);margin-left:2px">市价¥'+i.reference_price+'</span>' : ''}
+              <span class="fav-btn" onclick="event.stopPropagation();toggleMarketFav('${i.id}',this)">${isMarketFaved(i.id)?'❤️':'♡'}</span>
+              <span style="color:var(--c-text-light);font-size:12px">›</span>
+            </div>`).join('') + '</div></div>';
+      }).join('');
+    } else {
+      container.innerHTML = '<div class="empty-state"><div class="empty-state__icon">🛒</div><div class="empty-state__text">还没有常买食材</div><div class="empty-state__hint">去全部分类添加 ❤️</div></div>';
+    }
+  } else if (marketTag === 'fridge') {
+    // 冰箱库存 — 按储存方式分组
+    var storageLabel = { room:'🏠 常温', fridge:'❄️ 冷藏', freezer:'🧊 冷冻' };
+    var storageEmoji = { room:'🏠', fridge:'❄️', freezer:'🧊' };
+    ['fridge','freezer','room'].forEach(function(st) {
+      var items = filtered.filter(function(i) { return i.storage === st; });
+      if (!items.length) return;
+      container.innerHTML += '<div style="margin-bottom:10px">' +
+        '<div style="font-size:12px;font-weight:600;color:var(--c-text-secondary);padding:4px 4px 6px">' + storageEmoji[st] + ' ' + storageLabel[st] + ' (' + items.length + ')</div>' +
+        items.map(i => `
+          <div class="fridge-item" style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--c-border);background:var(--c-surface);border-radius:var(--radius-sm);margin-bottom:4px">
+            ${i.image ? '<span style="width:40px;height:40px;border-radius:8px;background-image:url('+i.image+');background-size:cover;background-position:center;flex-shrink:0"></span>' : '<span style="font-size:22px">'+(i.emoji||'📦')+'</span>'}
+            <div style="flex:1"><div style="font-size:14px;font-weight:600">${i.name}</div>
+            <div style="font-size:10px;color:var(--c-text-light)">${i.category2||''}${i.category3?' · '+i.category3:''} · 保质期${i.shelf_life_days||'—'}天</div></div>
+            <span style="font-size:11px;color:var(--c-primary-deep);font-weight:600">${i.unit||'斤'}</span>
+          </div>`).join('') + '</div>';
+    });
+    if (!filtered.length) container.innerHTML = '<div class="empty-state"><div class="empty-state__icon">🧊</div><div class="empty-state__text">冰箱还是空的</div><div class="empty-state__hint">去全部分类添加食材到冰箱</div></div>';
   } else {
     // 按一级分类分组
     const cats = ['畜禽肉类','鲜蔬类','水产海鲜','五谷干货','调味佐料','水果类'];
@@ -3893,17 +4029,29 @@ function renderMarket() {
     container.innerHTML = cats.map(c => {
       const items = filtered.filter(i => i.category1 === c);
       if (!items.length) return '';
+      // 按二级分类子分组
+      var subCats = {};
+      items.forEach(function(i) { var sc = i.category2 || '其他'; if (!subCats[sc]) subCats[sc] = []; subCats[sc].push(i); });
+      var subHtml = Object.keys(subCats).map(function(sc, sci) {
+        var subItems = subCats[sc];
+        var subId = 'sub-' + c.replace(/[^a-zA-Z一-鿿]/g,'') + '-' + sci;
+        return '<div style="margin-bottom:4px">' +
+          '<div style="font-size:11px;font-weight:600;color:var(--c-text-secondary);padding:6px 4px;cursor:pointer;display:flex;align-items:center;gap:4px" onclick="toggleMarketSub(\'' + subId + '\',this)">' +
+          '<span class="sub-arrow" style="font-size:10px">▸</span> ' + sc + ' (' + subItems.length + ')</div>' +
+          '<div id="' + subId + '" class="market-category__body" style="display:none">' +
+          subItems.map(i => `
+            <div class="market-ingredient-row" onclick="openPurchaseModal('${i.id}','${i.name}','${i.emoji}','${i.unit}')">
+              ${i.image ? '<span style="width:36px;height:36px;border-radius:6px;background-image:url('+i.image+');background-size:cover;background-position:center;flex-shrink:0"></span>' : '<span style="font-size:20px">'+(i.emoji||'📦')+'</span>'}
+              <span style="flex:1;font-size:14px">${i.name}<span style="font-size:10px;color:var(--c-text-light);margin-left:4px">${i.category3||''}</span></span>
+              <span style="color:var(--c-text-light);font-size:10px">${i.unit||'斤'}</span>${marketPrices[i.id] ? '<span style="font-size:9px;color:var(--c-accent);margin-left:2px">均价¥'+marketPrices[i.id].avg+'</span>' : ''}${i.reference_price ? '<span style="font-size:9px;color:var(--c-text-light);margin-left:2px">市价¥'+i.reference_price+'</span>' : ''}
+              <span class="fav-btn" onclick="event.stopPropagation();toggleMarketFav('${i.id}',this)">${isMarketFaved(i.id)?'❤️':'♡'}</span>
+            </div>`).join('') + '</div></div>';
+      }).join('');
       return `<div class="market-category">
         <div class="market-category__header" onclick="var b=this.nextElementSibling;b.classList.toggle('open');this.querySelector('.arrow').textContent=b.classList.contains('open')?'▾':'▸'">
           ${catEmoji[c]||''} ${c} (${items.length}) <span class="arrow" style="font-size:12px">▸</span>
         </div>
-        <div class="market-category__body">${items.map(i => `
-          <div class="market-ingredient-row" onclick="openPurchaseModal('${i.id}','${i.name}','${i.emoji}','${i.unit}')">
-            <span style="font-size:20px">${i.emoji||'📦'}</span>
-            <span style="flex:1;font-size:14px">${i.name}</span>
-            <span style="color:var(--c-text-light);font-size:11px">${i.unit||'斤'}</span>
-            <span class="fav-btn">♡</span>
-          </div>`).join('')}</div>
+        <div class="market-category__body">${subHtml}</div>
       </div>`;
     }).join('');
   }
@@ -3941,13 +4089,150 @@ async function openPurchaseModal(ingId, ingName, ingEmoji, ingUnit) {
   // 填充下拉
   const sel = document.getElementById('pur-ingredient');
   sel.innerHTML = allIngredients.map(i => `<option value="${i.id}" ${i.id === ingId ? 'selected' : ''}>${i.emoji||''} ${i.name}</option>`).join('');
+  sel.onchange = function() { loadPurHistory(this.value); };
   document.getElementById('pur-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('pur-price').value = '';
   document.getElementById('pur-quantity').value = '';
   document.getElementById('pur-total').value = '';
-  document.getElementById('pur-location').value = '菜市场';
+  var locSel = document.getElementById('pur-location');
+  locSel.innerHTML = marketLocations.map(function(l) { return '<option value="' + l + '">' + l + '</option>'; }).join('') + '<option value="其他">其他</option>';
+  locSel.value = marketDefaultLoc || marketLocations[0] || '菜市场';
   document.getElementById('pur-note').value = '';
   document.getElementById('purchase-modal').classList.add('show');
+  loadPurHistory(ingId);
+}
+
+async function loadPurHistory(ingId) {
+  var tbody = document.getElementById('pur-history-tbody');
+  var section = document.getElementById('pur-history');
+  var avgBadge = document.getElementById('pur-avg-badge');
+  if (!ingId || !tbody || !section) return;
+  try {
+    var res = await fetch(API_BASE + '/purchases?ingredient_id=' + ingId + '&_=' + Date.now());
+    var data = await res.json();
+    var rows = (data.data || []).slice(0, 20).reverse();
+    if (rows.length) {
+      section.style.display = 'block';
+      var prices = rows.map(function(r) { return parseFloat(r.price) || 0; });
+      var avgPrice = (prices.reduce(function(s, p) { return s + p; }, 0) / prices.length).toFixed(1);
+      // 均价徽章
+      if (avgBadge) { avgBadge.style.display = ''; avgBadge.textContent = '均价 ¥' + avgPrice + ' | ' + rows.length + '次'; }
+
+      // 画高清曲线（2x retina）
+      var canvas = document.getElementById('pur-chart');
+      if (canvas) {
+        var dpr = window.devicePixelRatio || 1;
+        var rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = 100 * dpr;
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = '100px';
+        var ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        var w = rect.width, h = 100;
+        ctx.clearRect(0, 0, w, h);
+
+        var maxP = Math.max.apply(null, prices), minP = Math.min.apply(null, prices);
+        var range = maxP - minP || 1;
+        var pad = { top: 6, right: 12, bottom: 20, left: 42 };
+        var pw = w - pad.left - pad.right, ph = h - pad.top - pad.bottom;
+
+        // 背景
+        ctx.fillStyle = '#FDFAF5'; ctx.beginPath();
+        var r = 6, x0 = pad.left, y0 = pad.top;
+        ctx.moveTo(x0+r, y0); ctx.lineTo(x0+pw-r, y0); ctx.arcTo(x0+pw, y0, x0+pw, y0+r, r);
+        ctx.lineTo(x0+pw, y0+ph-r); ctx.arcTo(x0+pw, y0+ph, x0+pw-r, y0+ph, r);
+        ctx.lineTo(x0+r, y0+ph); ctx.arcTo(x0, y0+ph, x0, y0+ph-r, r);
+        ctx.lineTo(x0, y0+r); ctx.arcTo(x0, y0, x0+r, y0, r); ctx.closePath(); ctx.fill();
+
+        // 水平网格线
+        for (var gi = 0; gi <= 3; gi++) {
+          var gy = pad.top + (ph / 3) * gi;
+          ctx.strokeStyle = gi === 3 ? '#EBE3D5' : 'rgba(201,169,110,0.2)';
+          ctx.lineWidth = gi === 3 ? 0.6 : 0.3;
+          ctx.setLineDash(gi === 3 ? [] : [3, 3]);
+          ctx.beginPath(); ctx.moveTo(pad.left, gy); ctx.lineTo(w - pad.right, gy); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#B0A590'; ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'right';
+          ctx.fillText('¥' + (maxP - (range / 3) * gi).toFixed(1), pad.left - 6, gy + 3);
+        }
+
+        // 底部日期
+        ctx.fillStyle = '#B0A590'; ctx.font = '9px -apple-system,sans-serif'; ctx.textAlign = 'center';
+        var step = Math.max(1, Math.floor((rows.length - 1) / 5));
+        rows.forEach(function(r, idx) {
+          if (idx % step === 0 || idx === rows.length - 1) {
+            var x = pad.left + (pw / Math.max(rows.length - 1, 1)) * idx;
+            var d = new Date(r.purchase_date);
+            ctx.fillText((d.getMonth()+1) + '/' + d.getDate(), x, h - 3);
+          }
+        });
+
+        // 面积渐变填充
+        var grad = ctx.createLinearGradient(0, pad.top, 0, h - pad.bottom);
+        grad.addColorStop(0, 'rgba(181,69,58,0.18)'); grad.addColorStop(1, 'rgba(181,69,58,0.0)');
+        ctx.beginPath();
+        var firstX = pad.left, firstY;
+        rows.forEach(function(r, idx) {
+          var x = pad.left + (pw / Math.max(rows.length - 1, 1)) * idx;
+          var y = pad.top + ph - ((parseFloat(r.price) || 0) - minP) / range * ph;
+          if (idx === 0) { ctx.moveTo(x, y); firstY = y; }
+          else ctx.lineTo(x, y);
+        });
+        var lastX = pad.left + pw;
+        ctx.lineTo(lastX, h - pad.bottom); ctx.lineTo(firstX, h - pad.bottom); ctx.closePath();
+        ctx.fillStyle = grad; ctx.fill();
+
+        // 折线
+        ctx.strokeStyle = '#B5453A'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.shadowColor = 'rgba(181,69,58,0.25)'; ctx.shadowBlur = 4;
+        ctx.beginPath();
+        rows.forEach(function(r, idx) {
+          var x = pad.left + (pw / Math.max(rows.length - 1, 1)) * idx;
+          var y = pad.top + ph - ((parseFloat(r.price) || 0) - minP) / range * ph;
+          if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // 均价虚线
+        ctx.strokeStyle = '#7A9A7E'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+        var avgY = pad.top + ph - (parseFloat(avgPrice) - minP) / range * ph;
+        ctx.beginPath(); ctx.moveTo(pad.left, avgY); ctx.lineTo(w - pad.right, avgY); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#7A9A7E'; ctx.font = '9px -apple-system,sans-serif'; ctx.textAlign = 'left';
+        ctx.fillText('均价¥' + avgPrice, w - pad.right + 4, avgY + 3);
+
+        // 最高最低点
+        var maxIdx = prices.indexOf(maxP), minIdx = prices.indexOf(minP);
+        [{idx:maxIdx, up:true}, {idx:minIdx, up:false}].forEach(function(pt) {
+          if (pt.idx < 0) return;
+          var x = pad.left + (pw / Math.max(rows.length - 1, 1)) * pt.idx;
+          var y = pad.top + ph - (prices[pt.idx] - minP) / range * ph;
+          ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = pt.up ? '#B5453A' : '#7A9A7E'; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+        });
+      }
+
+      // 表格
+      var displayRows = rows.slice().reverse();
+      tbody.innerHTML = displayRows.map(function(r) {
+        var d = r.purchase_date ? new Date(r.purchase_date) : null;
+        var dateStr = d ? (d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日') : '';
+        var p = parseFloat(r.price) || 0;
+        var above = p > parseFloat(avgPrice);
+        return '<tr style="border-bottom:1px solid var(--c-border)">' +
+          '<td style="padding:4px 6px;font-size:11px">' + dateStr + '</td>' +
+          '<td style="padding:4px 6px;font-size:11px;font-weight:600;color:' + (above ? '#B5453A' : '#7A9A7E') + '">¥' + p.toFixed(1) + (above ? ' ↑' : ' ↓') + '</td>' +
+          '<td style="padding:4px 6px;font-size:11px">' + (r.quantity || 0) + (r.unit||'斤') + '</td>' +
+          '<td style="padding:4px 6px;font-size:11px">¥' + (r.total_price || 0) + '</td>' +
+          '<td style="padding:4px 6px;font-size:10px;color:var(--c-text-light)">' + (r.location || '') + '</td>' +
+          '</tr>';
+      }).join('');
+    } else {
+      section.style.display = 'none';
+    }
+  } catch(e) { section.style.display = 'none'; }
 }
 
 function closePurchaseModal() { document.getElementById('purchase-modal').classList.remove('show'); }
@@ -3978,6 +4263,7 @@ async function savePurchase() {
     document.getElementById('pur-price').value = '';
     document.getElementById('pur-quantity').value = '';
     document.getElementById('pur-total').value = '';
+    loadPurHistory(document.getElementById('pur-ingredient').value);
   } catch (e) { showToast('录入失败'); }
 }
 
@@ -4324,10 +4610,27 @@ function showMealMenuManager() {
 }
 
 // ----- 自定义食材 -----
+var _cingImageFile = null;
+function handleCingImagePicked(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  _cingImageFile = file;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var el = document.getElementById('cing-img-preview');
+    if (el) { el.style.backgroundImage = 'url(' + e.target.result + ')'; el.textContent = ''; el.style.backgroundSize = 'cover'; }
+  };
+  reader.readAsDataURL(file);
+}
+
 async function showCustomIngredientForm() {
+  _cingImageFile = null;
   var html = '<div style="padding:16px var(--page-px)">';
   html += '<h3 style="font-family:var(--font-title);margin-bottom:14px">＋ 新增自定义食材</h3>';
   html += '<div class="form-group"><label class="form-label">食材名称 *</label><input class="form-input" id="cing-name" placeholder="例如：牛油果"></div>';
+  html += '<div class="form-group"><label class="form-label">图片（可选）</label>';
+  html += '<div id="cing-img-preview" onclick="document.getElementById(\'cing-image-file\').click()" style="width:100%;aspect-ratio:16/9;max-height:160px;border-radius:var(--radius-md);border:2px dashed var(--c-border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:40px;background:var(--c-surface);background-size:cover;background-position:center;overflow:hidden">📷</div>';
+  html += '<input type="file" id="cing-image-file" accept="image/*" onchange="handleCingImagePicked(this)" style="display:none"></div>';
   html += '<div class="form-group"><label class="form-label">Emoji</label><input class="form-input" id="cing-emoji" placeholder="例如：🥑" value="📦"></div>';
   html += '<div class="form-group"><label class="form-label">分类</label><select id="cing-cat1" style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--c-border);background:var(--c-bg)"><option value="畜禽肉类">🥩 畜禽肉类</option><option value="鲜蔬类">🥬 鲜蔬类</option><option value="水产海鲜">🐟 水产海鲜</option><option value="五谷干货">🌾 五谷干货</option><option value="调味佐料">🧂 调味佐料</option><option value="水果类">🍎 水果类</option></select></div>';
   html += '<div class="form-group"><label class="form-label">单位</label><input class="form-input" id="cing-unit" placeholder="斤/个/克" value="斤"></div>';
@@ -4336,6 +4639,36 @@ async function showCustomIngredientForm() {
   html += '<button onclick="saveCustomIngredient()" style="flex:1;padding:12px;background:var(--c-primary);color:#fff;border-radius:var(--radius-lg);font-size:14px;font-weight:600">保存</button></div>';
   html += '</div>';
   openModalSheet(html);
+}
+
+async function saveCustomIngredient() {
+  var name = document.getElementById('cing-name')?.value.trim();
+  if (!name) { showToast('请输入食材名称'); return; }
+  var imageUrl = '';
+  if (_cingImageFile) {
+    try {
+      var fd = new FormData(); fd.append('file', _cingImageFile);
+      var upRes = await fetch('/api/upload', { method:'POST', body:fd });
+      var upData = await upRes.json();
+      if (upData.url) imageUrl = upData.url;
+    } catch(e) {}
+  }
+  var payload = {
+    name: name,
+    image: imageUrl,
+    emoji: document.getElementById('cing-emoji')?.value || '📦',
+    category1: document.getElementById('cing-cat1')?.value || '鲜蔬类',
+    category2: '自定义',
+    unit: document.getElementById('cing-unit')?.value || '斤',
+    storage: document.getElementById('cing-storage')?.value || 'room',
+    shelf_life_days: 7, is_system: 0
+  };
+  try {
+    await fetch('/api/ingredients', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    showToast('食材添加成功');
+    closeModalSheet();
+    loadMarket();
+  } catch(e) { showToast('添加失败: ' + e.message); }
 }
 
 async function saveCustomIngredient() {
