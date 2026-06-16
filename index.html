@@ -1355,17 +1355,21 @@ img { max-width: 100%; display: block; }
 .purchase-modal.show { display: flex; }
 .purchase-sheet {
   width: 100%; max-height: 85vh; background: var(--c-surface);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  padding: 16px var(--page-px) calc(16px + env(safe-area-inset-bottom));
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 20px var(--page-px) calc(20px + env(safe-area-inset-bottom));
   overflow-y: auto; animation: slideUp 0.3s var(--ease-out);
 }
-.purchase-sheet h3 { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
-.purchase-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.purchase-row label { font-size: 13px; color: var(--c-text-secondary); width: 56px; flex-shrink: 0; }
+.purchase-sheet h3 {
+  font-family: var(--font-title); font-size: 18px; font-weight: 700;
+  margin-bottom: 16px; color: var(--c-text);
+  padding-bottom: 12px; border-bottom: 1px solid var(--c-border);
+}
+.purchase-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; min-width:0; }
+.purchase-row label { font-size: 12px; color: var(--c-text-secondary); width: 36px; flex-shrink: 0; text-align: right; }
 .purchase-row input, .purchase-row select {
-  flex: 1; padding: 8px 12px; border-radius: var(--radius-sm);
+  flex: 1; min-width:0; padding: 8px 10px; border-radius: var(--radius-sm);
   border: 1.5px solid var(--c-border); background: var(--c-bg);
-  font-size: 14px;
+  font-size: 14px; width: 100%;
 }
 .purchase-row input:focus { border-color: var(--c-primary); outline: none; }
 
@@ -1612,50 +1616,68 @@ img { max-width: 100%; display: block; }
 
   <!-- ====== 菜场 ====== -->
   <div class="page" id="page-market" data-page="market">
-    <header class="page-header">
-      <span class="page-header__title">菜场</span>
-    </header>
-    <div class="tag-bar" id="market-tag-bar">
-      <button class="tag-chip active" data-mtag="frequent">❤️ 我的常买</button>
-      <button class="tag-chip" data-mtag="all">📂 全部分类</button>
-      <button class="tag-chip" data-mtag="fridge">🧊 冰箱库存</button>
+    <div id="market-banner" style="position:relative;background:linear-gradient(135deg,#D4C5B0,#E8DACA,#C9B896);background-size:cover;background-position:center;padding-bottom:10px;transition:all 0.5s">
+      <header class="page-header" style="background:rgba(253,250,245,0.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)">
+        <div class="page-header__left">
+          <span id="market-loc-icon" style="width:32px;height:32px;border-radius:8px;background-size:cover;background-position:center;flex-shrink:0;display:none;border:2px solid rgba(255,255,255,0.8);box-shadow:0 2px 8px rgba(0,0,0,0.1)"></span>
+          <span class="page-header__title">菜场</span>
+        </div>
+        <div class="page-header__right" style="gap:6px">
+          <select id="market-loc-select" onchange="setDefaultLoc(this.value)" style="padding:5px 10px;font-size:12px;border-radius:var(--radius-sm);border:1px solid var(--c-border);background:rgba(255,255,255,0.7);width:auto;min-width:110px"></select>
+          <button onclick="manageMarketLocs()" style="padding:5px 10px;font-size:11px;border-radius:var(--radius-sm);border:1px solid var(--c-border);background:rgba(255,255,255,0.7);cursor:pointer;white-space:nowrap">管理</button>
+        </div>
+      </header>
+      <div class="tag-bar" id="market-tag-bar" style="background:transparent;padding-top:6px">
+        <button class="tag-chip active" data-mtag="frequent" style="background:rgba(255,255,255,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">❤️ 我的常买</button>
+        <button class="tag-chip" data-mtag="all" style="background:rgba(255,255,255,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">📂 全部分类</button>
+        <button class="tag-chip" data-mtag="fridge" style="background:rgba(255,255,255,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">🧊 冰箱库存</button>
+      </div>
     </div>
     <div id="market-content"></div>
     <div style="padding:12px var(--page-px);display:flex;flex-direction:column;gap:8px">
       <button style="width:100%;padding:12px;background:var(--c-primary);color:#fff;border-radius:var(--radius-lg);font-size:14px;font-weight:600" onclick="showCustomIngredientForm()">＋ 新增自定义食材</button>
-      <button style="width:100%;padding:10px;background:var(--c-surface);color:var(--c-text-secondary);border:1px solid var(--c-border);border-radius:var(--radius-lg);font-size:13px" onclick="manageMarketLocs()">📍 管理买菜地点</button>
     </div>
   </div>
 
   <!-- 采购录入弹窗 -->
   <div class="purchase-modal" id="purchase-modal">
     <div class="purchase-sheet">
-      <h3>录入采购记录</h3>
-      <div class="purchase-row">
-        <label>食材</label>
-        <select id="pur-ingredient" style="flex:1;padding:8px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--c-border);background:var(--c-bg);font-size:14px"></select>
+      <h3>菜品详细清单</h3>
+      <div style="display:flex;gap:8px">
+        <div class="purchase-row" style="flex:1">
+          <label>食材</label>
+          <div style="display:flex;align-items:center;gap:6px;flex:1">
+            <span id="pur-ing-img" onclick="document.getElementById('pur-ing-file').click()" title="点击上传图片" style="width:36px;height:36px;border-radius:6px;background:var(--c-warm);background-size:cover;background-position:center;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer"></span>
+            <input type="file" id="pur-ing-file" accept="image/*" onchange="uploadIngImg(this)" style="display:none">
+            <select id="pur-ingredient" style="flex:1;padding:8px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--c-border);background:var(--c-bg);font-size:14px"></select>
+          </div>
+        </div>
+        <div class="purchase-row" style="flex:1">
+          <label>日期</label>
+          <input type="date" id="pur-date">
+        </div>
       </div>
-      <div class="purchase-row">
-        <label>日期</label>
-        <input type="date" id="pur-date">
+      <div style="display:flex;gap:8px">
+        <div class="purchase-row" style="flex:1">
+          <label>单价</label>
+          <input type="number" id="pur-price" placeholder="元/斤" step="0.01" oninput="calcPurTotal()">
+        </div>
+        <div class="purchase-row" style="flex:1">
+          <label>数量</label>
+          <input type="number" id="pur-quantity" placeholder="斤" step="0.1" oninput="calcPurTotal()">
+        </div>
       </div>
-      <div class="purchase-row">
-        <label>单价</label>
-        <input type="number" id="pur-price" placeholder="元/斤" step="0.01" oninput="calcPurTotal()">
-      </div>
-      <div class="purchase-row">
-        <label>数量</label>
-        <input type="number" id="pur-quantity" placeholder="斤" step="0.1" oninput="calcPurTotal()">
-      </div>
-      <div class="purchase-row">
-        <label>总价</label>
-        <input type="number" id="pur-total" readonly style="background:var(--c-warm)">
-      </div>
-      <div class="purchase-row">
-        <label>地点</label>
-        <select id="pur-location" style="flex:1;padding:8px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--c-border);background:var(--c-bg);font-size:14px">
-          <option value="菜市场">菜市场</option><option value="超市">超市</option><option value="线上">线上</option><option value="其他">其他</option>
-        </select>
+      <div style="display:flex;gap:8px">
+        <div class="purchase-row" style="flex:1">
+          <label>总价</label>
+          <input type="number" id="pur-total" readonly style="background:var(--c-warm)">
+        </div>
+        <div class="purchase-row" style="flex:1">
+          <label>地点</label>
+          <select id="pur-location" style="flex:1;padding:8px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--c-border);background:var(--c-bg);font-size:14px">
+            <option value="菜市场">菜市场</option><option value="超市">超市</option><option value="线上">线上</option><option value="其他">其他</option>
+          </select>
+        </div>
       </div>
       <div class="purchase-row">
         <label>备注</label>
@@ -2898,7 +2920,7 @@ function confirmAddToDB(name, cat) {
   html += '<p style="font-size:13px;color:var(--c-text-secondary);margin-bottom:14px">食材库中未找到「<b>' + name + '</b>」，确认信息后添加到数据库：</p>';
   html += '<div class="form-group"><label class="form-label">名称</label><input class="form-input" id="adddb-name" value="' + name + '"></div>';
   html += '<div class="form-group"><label class="form-label">图标</label>';
-  html += '<div style="display:flex;flex-wrap:wrap;gap:5px;max-height:120px;overflow-y:auto;padding:6px;background:var(--c-warm);border-radius:var(--radius-md)">';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:5px;max-height:180px;overflow-y:auto;padding:6px;background:var(--c-warm);border-radius:var(--radius-md)">';
   SPICE_EMOJIS.forEach(function(em) {
     html += '<span data-emoji="' + em + '" onclick="document.getElementById(\'adddb-emoji\').value=\'' + em + '\';this.closest(\'.form-group\').querySelectorAll(\'span[data-emoji]\').forEach(function(s){s.style.background=s.dataset.emoji===\'' + em + '\'?\'var(--c-primary-light)\':\'\'})" style="font-size:22px;cursor:pointer;padding:4px;border-radius:6px">' + em + '</span>';
   });
@@ -3173,7 +3195,28 @@ function deleteQuickChip(listName, id) {
 // 自定义录入弹窗
 var _customIngCat = '';
 // 香料/调料专用emoji库
-var SPICE_EMOJIS = ['🌶️','🫑','🧄','🧅','🫚','🌿','🍃','🌱','🍂','🍁','🌾','⭐','🪵','🌰','🫘','🥜','🌸','🌺','🌼','💮','🏵️','🌻','🪻','🪷','🍄','🫒','🌽','🥬','🥒','🥕','🧂','🫗','🍯','🍬','🍭','🍋','🍊','🥫','🫙','🍶','🍾','🍷','🧉','✨','🌟','💫','🔥','💧','🧊','☘️','🍀','🪹','🪺'];
+var SPICE_EMOJIS = [
+  // 肉类
+  '🥩','🍖','🍗','🥓','🍤','🦴','🍢','🥮',
+  // 蔬菜
+  '🥬','🥒','🥕','🌽','🍅','🍆','🥔','🍠','🧅','🧄','🫑','🌶️','🥦','🍄','🫘','🥜','🫒','🥑','🌰',
+  // 水果
+  '🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍒','🍑','🥭','🍍','🥝','🍈','🥥',
+  // 海鲜
+  '🐟','🐠','🐡','🦐','🦞','🦀','🦑','🐙','🦪','🦞','🐚',
+  // 主食
+  '🍚','🍙','🍜','🍝','🥟','🍞','🥖','🥐','🌮','🌯','🥪','🍕','🍔','🌭','🥨','🥯',
+  // 豆制品
+  '🧈','🫕','🥘','🍲','🫗','🧂',
+  // 蛋奶
+  '🥚','🍳','🧀','🥛','🍼','🫙',
+  // 饮品
+  '🧃','🥤','🧋','🍵','☕','🍺','🍻','🥂','🍷','🍶','🧉','🍾',
+  // 调味
+  '🧂','🍯','🍬','🍭','🍫','🍪','🧊',
+  // 其他
+  '🥫','📦','🛒','🧺','🍽️','🥢','🔪','🏪','🧑‍🍳','👨‍🍳','👩‍🍳','✨','🌟','💫','🔥','💧','🌿','🍃','🌱','🍂','🍁','🌾','🌺','🌼','🌻','🪷','🪻','🪹','🪺'
+];
 
 function showCustomIngredientDialog(listRef, containerId, cat) {
   _customIngCat = cat;
@@ -3874,12 +3917,32 @@ let marketSearch = '';
 let purchaseIngId = '';
 let marketFavs = loadLib('market_favs', []); // 常买收藏
 let marketLocations = loadLib('market_locs', ['菜市场','超市','线上']); // 买菜地点
-let marketDefaultLoc = localStorage.getItem('caipu_default_loc') || marketLocations[0]; // 默认菜市场
+let marketLocImages = loadLib('market_loc_imgs', {}); // 每个地点的图片 {name: url}
+let marketLocPos = loadLib('market_loc_pos', {}); // 每个地点的图片位置 {name: '50% 50%'}
+let marketDefaultLoc = localStorage.getItem('caipu_default_loc') || marketLocations[0];
 
 function renderMarketLocDropdown() {
   var sel = document.getElementById('market-loc-select');
   if (!sel) return;
   sel.innerHTML = marketLocations.map(function(l) { return '<option value="' + l + '" ' + (l === marketDefaultLoc ? 'selected' : '') + '>📍' + l + '</option>'; }).join('');
+  updateMarketLocImg();
+}
+function updateMarketLocImg() {
+  var banner = document.getElementById('market-banner');
+  var icon = document.getElementById('market-loc-icon');
+  var url = marketLocImages[marketDefaultLoc];
+  var pos = marketLocPos[marketDefaultLoc] || '50% 50%';
+  if (banner) {
+    if (url) {
+      banner.style.background = 'linear-gradient(0deg, rgba(253,250,245,0.35) 0%, rgba(253,250,245,0.1) 50%, rgba(253,250,245,0.0) 100%), url(' + url + ') ' + pos + '/cover';
+    } else {
+      banner.style.background = 'linear-gradient(135deg,#D4C5B0,#E8DACA,#C9B896)';
+    }
+  }
+  if (icon) {
+    if (url) { icon.style.display = ''; icon.style.backgroundImage = 'url(' + url + ')'; icon.style.backgroundPosition = pos; }
+    else { icon.style.display = 'none'; }
+  }
 }
 function setDefaultLoc(name) {
   marketDefaultLoc = name;
@@ -3889,14 +3952,56 @@ function setDefaultLoc(name) {
 function manageMarketLocs() {
   var html = '<div style="padding:16px var(--page-px)"><h3 style="font-family:var(--font-title);margin-bottom:12px">📍 管理买菜地点</h3>';
   html += '<div style="display:flex;gap:6px;margin-bottom:10px"><input class="form-input" id="new-loc-name" placeholder="输入新地点名称" style="flex:1"><button onclick="addMarketLocFromInput()" style="padding:8px 14px;background:var(--c-primary);color:#fff;border-radius:var(--radius-sm);font-size:13px;white-space:nowrap">添加</button></div>';
-  html += '<div style="max-height:200px;overflow-y:auto">';
+  html += '<div style="max-height:220px;overflow-y:auto">';
+  var li = 0;
   marketLocations.forEach(function(l) {
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-bottom:1px solid var(--c-border)"><span>' + l + (l === marketDefaultLoc ? ' ⭐默认' : '') + '</span><div style="display:flex;gap:6px">';
+    var imgUrl = marketLocImages[l] || '';
+    var idx = li++;
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--c-border)">';
+    html += '<span id="loc-img-' + idx + '" onclick="document.getElementById(\'loc-file-' + idx + '\').click()" style="width:36px;height:36px;border-radius:6px;background:' + (imgUrl ? 'url('+imgUrl+')' : 'var(--c-warm)') + ';background-size:cover;background-position:center;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px">' + (imgUrl ? '' : '📷') + '</span>';
+    html += '<input type="file" id="loc-file-' + idx + '" accept="image/*" onchange="uploadLocImg(this,\'' + l + '\',' + idx + ')" style="display:none">';
+    html += '<span style="flex:1;font-size:13px">' + l + (l === marketDefaultLoc ? ' ⭐默认' : '') + '</span>';
+    if (imgUrl) {
+      html += '<span style="display:flex;gap:1px;margin-right:4px">';
+      html += '<button onclick="adjLocImgPos(\'' + l + '\',0,-5)" style="font-size:10px;padding:1px 5px;background:var(--c-warm);border:none;cursor:pointer;border-radius:3px 0 0 3px" title="上移">▲</button>';
+      html += '<button onclick="adjLocImgPos(\'' + l + '\',0,5)" style="font-size:10px;padding:1px 5px;background:var(--c-warm);border:none;cursor:pointer" title="下移">▼</button>';
+      html += '<button onclick="adjLocImgPos(\'' + l + '\',-5,0)" style="font-size:10px;padding:1px 5px;background:var(--c-warm);border:none;cursor:pointer" title="左移">◀</button>';
+      html += '<button onclick="adjLocImgPos(\'' + l + '\',5,0)" style="font-size:10px;padding:1px 5px;background:var(--c-warm);border:none;cursor:pointer;border-radius:0 3px 3px 0" title="右移">▶</button>';
+      html += '</span>';
+    }
+    html += '<div style="display:flex;gap:6px">';
     if (l !== marketDefaultLoc) html += '<button onclick="setDefaultLoc(\'' + l + '\');closeModalSheet()" style="font-size:11px;color:var(--c-primary);padding:2px 8px;border-radius:var(--radius-sm);border:1px solid var(--c-primary)">设为默认</button>';
     html += '<button onclick="deleteMarketLoc(\'' + l + '\');manageMarketLocs()" style="font-size:11px;color:var(--c-danger);padding:2px 8px;border-radius:var(--radius-sm);border:1px solid var(--c-danger)">删除</button></div></div>';
   });
   html += '</div><div style="text-align:center;margin-top:10px"><button onclick="closeModalSheet()" style="padding:10px 30px;background:var(--c-warm);border-radius:var(--radius-lg);font-size:14px">关闭</button></div></div>';
   openModalSheet(html);
+}
+function adjLocImgPos(locName, dx, dy) {
+  var pos = (marketLocPos[locName] || '50% 50%').split(' ');
+  var x = parseFloat(pos[0]) + dx;
+  var y = parseFloat(pos[1]) + dy;
+  x = Math.max(0, Math.min(100, x));
+  y = Math.max(0, Math.min(100, y));
+  marketLocPos[locName] = x + '% ' + y + '%';
+  saveLib('market_loc_pos', marketLocPos);
+  updateMarketLocImg();
+}
+
+async function uploadLocImg(input, locName, idx) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  try {
+    var fd = new FormData(); fd.append('file', file);
+    var res = await fetch('/api/upload', { method:'POST', body:fd });
+    var data = await res.json();
+    if (data.url) {
+      marketLocImages[locName] = data.url;
+      saveLib('market_loc_imgs', marketLocImages);
+      updateMarketLocImg();
+      var preview = document.getElementById('loc-img-' + idx);
+      if (preview) { preview.style.backgroundImage = 'url(' + data.url + ')'; preview.textContent = ''; }
+    }
+  } catch(e) { showToast('上传失败'); }
 }
 function addMarketLocFromInput() {
   var input = document.getElementById('new-loc-name');
@@ -3907,13 +4012,6 @@ function addMarketLocFromInput() {
   saveLib('market_locs', marketLocations);
   renderMarketLocDropdown();
   manageMarketLocs();
-}
-function deleteMarketLoc(name) {
-  var idx = marketLocations.indexOf(name);
-  if (idx >= 0) marketLocations.splice(idx, 1);
-  if (marketDefaultLoc === name) { marketDefaultLoc = marketLocations[0] || ''; localStorage.setItem('caipu_default_loc', marketDefaultLoc); }
-  saveLib('market_locs', marketLocations);
-  renderMarketLocDropdown();
 }
 function addMarketLoc() { /* 保留兼容 */ }
 function addMarketLoc() {
@@ -3928,6 +4026,8 @@ function addMarketLoc() {
 function deleteMarketLoc(name) {
   var idx = marketLocations.indexOf(name);
   if (idx >= 0) marketLocations.splice(idx, 1);
+  delete marketLocImages[name];
+  saveLib('market_loc_imgs', marketLocImages);
   if (marketDefaultLoc === name) { marketDefaultLoc = marketLocations[0] || ''; localStorage.setItem('caipu_default_loc', marketDefaultLoc); }
   saveLib('market_locs', marketLocations);
   renderMarketLocDropdown();
@@ -3943,6 +4043,140 @@ function toggleMarketFav(id, el) {
   saveLib('market_favs', marketFavs);
   if (marketTag === 'frequent') renderMarket();
   el.style.pointerEvents = '';
+}
+
+
+// ===== 食材详情编辑面板 =====
+let _ingDetailId = '';
+
+async function openIngDetail(ingId) {
+  var ing = allIngredients.find(function(i){return i.id===ingId;}) || marketData.find(function(i){return i.id===ingId;});
+  if (!ing) {
+    try {
+      var res = await fetch(API_BASE + '/ingredients/' + ingId);
+      ing = await res.json();
+    } catch(e) { return; }
+  }
+  _ingDetailId = ingId;
+  var imgUrl = ing.image || '';
+  var html = '<div style="padding:16px var(--page-px)">';
+  // 图片
+  html += '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px">';
+  html += '<span onclick="document.getElementById(\'ingdet-file\').click()" style="width:56px;height:56px;border-radius:10px;background:' + (imgUrl ? 'url('+imgUrl+')' : 'var(--c-warm)') + ';background-size:cover;background-position:center;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer">' + (imgUrl ? '' : (ing.emoji||'📦')) + '</span>';
+  html += '<input type="file" id="ingdet-file" accept="image/*" onchange="uploadIngDetailImg(this)" style="display:none">';
+  // 名称+分类
+  html += '<div style="flex:1"><input class="form-input" id="ingdet-name" value="' + ing.name + '" style="font-size:16px;font-weight:700;margin-bottom:4px"><div style="display:flex;gap:6px;align-items:center"><select id="ingdet-unit" style="padding:4px 8px;font-size:11px;border-radius:var(--radius-sm);border:1px solid var(--c-border);background:var(--c-bg)"><option value="斤"' + (ing.unit==='斤'?' selected':'') + '>斤</option><option value="克"' + (ing.unit==='克'?' selected':'') + '>克</option><option value="个"' + (ing.unit==='个'?' selected':'') + '>个</option><option value="毫升"' + (ing.unit==='毫升'?' selected':'') + '>毫升</option><option value="根"' + (ing.unit==='根'?' selected':'') + '>根</option><option value="勺"' + (ing.unit==='勺'?' selected':'') + '>勺</option><option value="适量"' + (ing.unit==='适量'?' selected':'') + '>适量</option></select> · ' + (ing.category2 || ing.category1 || '') + (ing.category3 ? ' · ' + ing.category3 : '') + '</div></div></div>';
+  // 操作按钮
+  html += '<div style="display:flex;gap:6px;margin-bottom:12px"><button onclick="saveIngDetail()" style="flex:1;padding:10px;background:var(--c-primary);color:#fff;border-radius:var(--radius-sm);font-size:13px;font-weight:600">💾 保存</button><button onclick="openPurchaseModal(\'' + ingId + '\',\'' + ing.name + '\',\'' + (ing.emoji||'📦') + '\',\'' + (ing.unit||'斤') + '\');closeModalSheet()" style="padding:10px 14px;background:var(--c-success);color:#fff;border-radius:var(--radius-sm);font-size:13px">＋采购</button><button onclick="deleteIngDetail(\'' + ingId + '\')" style="padding:10px 14px;background:var(--c-danger);color:#fff;border-radius:var(--radius-sm);font-size:13px">🗑</button></div>';
+  // 历史记录
+  html += '<div style="font-size:12px;font-weight:600;color:var(--c-text);margin-bottom:6px">📋 采购记录</div>';
+  html += '<div id="ingdet-history" style="max-height:200px;overflow-y:auto;margin-bottom:10px">加载中...</div>';
+  html += '<div style="text-align:center"><button onclick="closeModalSheet()" style="padding:10px 30px;background:var(--c-warm);border-radius:var(--radius-lg);font-size:14px">关闭</button></div></div>';
+  openModalSheet(html);
+  loadIngDetailHistory(ingId);
+}
+
+async function loadIngDetailHistory(ingId) {
+  var container = document.getElementById('ingdet-history');
+  if (!container) return;
+  try {
+    var res = await fetch(API_BASE + '/purchases?ingredient_id=' + ingId + '&_=' + Date.now());
+    var data = await res.json();
+    var rows = (data.data || []).slice(0, 20);
+    if (!rows.length) { container.innerHTML = '<div style="text-align:center;color:var(--c-text-light);font-size:12px;padding:10px">暂无采购记录</div>'; return; }
+    container.innerHTML = rows.map(function(r) {
+      var d = r.purchase_date ? new Date(r.purchase_date) : null;
+      var dateStr = d ? (d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日') : '';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--c-border);font-size:12px">' +
+        '<span style="flex:1">' + dateStr + ' · ¥' + (r.price||0) + ' · ' + (r.quantity||0) + (r.unit||'斤') + ' · ' + (r.location||'') + '</span>' +
+        '<span style="font-size:11px;color:var(--c-text-light)">¥' + (r.total_price||0) + '</span>' +
+        '<button onclick="editPurchaseRecord(\'' + r.id + '\',' + (r.price||0) + ',' + (r.quantity||0) + ',\'' + (r.location||'') + '\',\'' + (r.purchase_date||'') + '\')" style="font-size:10px;padding:2px 6px;border:1px solid var(--c-border);border-radius:3px;background:var(--c-warm);cursor:pointer">✏️</button>' +
+        '<button onclick="deletePurchaseRecord(\'' + r.id + '\')" style="font-size:10px;padding:2px 6px;color:var(--c-danger);border:1px solid var(--c-danger);border-radius:3px;background:none;cursor:pointer">×</button>' +
+        '</div>';
+    }).join('');
+  } catch(e) { container.innerHTML = '加载失败'; }
+}
+
+async function uploadIngDetailImg(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  var fd = new FormData(); fd.append('file', file);
+  var res = await fetch('/api/upload', { method:'POST', body:fd });
+  var data = await res.json();
+  if (data.url) {
+    await fetch(API_BASE + '/ingredients/' + _ingDetailId, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({image:data.url}) });
+    var ing = allIngredients.find(function(i){return i.id===_ingDetailId;});
+    if (ing) ing.image = data.url;
+    var mIng = marketData.find(function(i){return i.id===_ingDetailId;});
+    if (mIng) mIng.image = data.url;
+    showToast('图片已更新');
+    openIngDetail(_ingDetailId);
+  }
+}
+
+async function saveIngDetail() {
+  var name = document.getElementById('ingdet-name')?.value.trim();
+  var unit = document.getElementById('ingdet-unit')?.value;
+  if (!name) { showToast('名称不能为空'); return; }
+  try {
+    await fetch(API_BASE + '/ingredients/' + _ingDetailId, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:name, unit:unit}) });
+    var ing = allIngredients.find(function(i){return i.id===_ingDetailId;});
+    if (ing) { ing.name = name; ing.unit = unit; }
+    var mIng = marketData.find(function(i){return i.id===_ingDetailId;});
+    if (mIng) { mIng.name = name; mIng.unit = unit; }
+    showToast('已保存');
+    closeModalSheet();
+    renderMarket();
+  } catch(e) { showToast('保存失败'); }
+}
+
+async function deleteIngDetail(ingId) {
+  if (!confirm('确定删除这个食材？')) return;
+  try {
+    var res = await fetch(API_BASE + '/ingredients/' + ingId, { method:'DELETE' });
+    if (res.status === 403) { showToast('系统食材不可删除'); return; }
+    allIngredients = allIngredients.filter(function(i){return i.id!==ingId;});
+    marketData = marketData.filter(function(i){return i.id!==ingId;});
+    showToast('已删除');
+    closeModalSheet();
+    renderMarket();
+  } catch(e) { showToast('删除失败'); }
+}
+
+function editPurchaseRecord(id, price, qty, loc, date) {
+  var d = date ? new Date(date) : new Date();
+  var dateVal = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  var html = '<div style="padding:16px var(--page-px)"><h3 style="font-family:var(--font-title);margin-bottom:12px">✏️ 修改采购记录</h3>';
+  html += '<div style="display:flex;gap:8px;margin-bottom:8px"><div class="purchase-row" style="flex:1"><label>日期</label><input type="date" id="epr-date" value="' + dateVal + '"></div><div class="purchase-row" style="flex:1"><label>单价</label><input type="number" id="epr-price" value="' + price + '" step="0.01"></div></div>';
+  html += '<div style="display:flex;gap:8px;margin-bottom:8px"><div class="purchase-row" style="flex:1"><label>数量</label><input type="number" id="epr-qty" value="' + qty + '" step="0.1"></div><div class="purchase-row" style="flex:1"><label>地点</label><select id="epr-loc" style="flex:1;padding:8px 10px;border-radius:var(--radius-sm);border:1.5px solid var(--c-border);background:var(--c-bg);font-size:14px">' + marketLocations.map(function(l){return '<option value="'+l+'"' + (l===loc?' selected':'') + '>'+l+'</option>';}).join('') + '<option value="其他"' + (loc==='其他'?' selected':'') + '>其他</option></select></div></div>';
+  html += '<div style="display:flex;gap:8px"><button onclick="closeModalSheet()" style="flex:1;padding:12px;background:var(--c-warm);border-radius:var(--radius-lg);font-size:14px">取消</button><button onclick="saveEditPurchase(\'' + id + '\')" style="flex:1;padding:12px;background:var(--c-primary);color:#fff;border-radius:var(--radius-lg);font-size:14px;font-weight:600">保存修改</button></div></div>';
+  openModalSheet(html);
+}
+
+async function saveEditPurchase(id) {
+  var price = parseFloat(document.getElementById('epr-price')?.value) || 0;
+  var qty = parseFloat(document.getElementById('epr-qty')?.value) || 1;
+  var date = document.getElementById('epr-date')?.value;
+  var loc = document.getElementById('epr-loc')?.value;
+  var total = Math.round(price * qty * 100) / 100;
+  try {
+    await fetch(API_BASE + '/purchases/' + id, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({price:price, quantity:qty, total_price:total, purchase_date:date, location:loc})
+    });
+    showToast('已更新');
+    closeModalSheet();
+    loadIngDetailHistory(_ingDetailId);
+  } catch(e) { showToast('更新失败'); }
+}
+
+async function deletePurchaseRecord(id) {
+  if (!confirm('删除这条采购记录？')) return;
+  try {
+    await fetch(API_BASE + '/purchases/' + id, { method:'DELETE' });
+    showToast('已删除');
+    loadIngDetailHistory(_ingDetailId);
+  } catch(e) { showToast('删除失败'); }
 }
 
 // 菜场二级分类折叠
@@ -3984,7 +4218,7 @@ function renderMarket() {
     if (filtered.length) {
       var freqCats = {};
       var fci = 0;
-      filtered.forEach(function(i) { var sc = i.category2 || i.category1 || '其他'; if (!freqCats[sc]) freqCats[sc] = []; freqCats[sc].push(i); });
+      filtered.forEach(function(i) { var sc = i.category1 || '其他'; if (!freqCats[sc]) freqCats[sc] = []; freqCats[sc].push(i); });
       container.innerHTML = Object.keys(freqCats).map(function(sc) {
         var items = freqCats[sc];
         var fid = 'freq-' + fci++;
@@ -3995,8 +4229,8 @@ function renderMarket() {
           items.map(i => `
             <div class="market-ingredient-row" onclick="openPurchaseModal('${i.id}','${i.name}','${i.emoji}','${i.unit}')">
               ${i.image ? '<span style="width:40px;height:40px;border-radius:8px;background-image:url('+i.image+');background-size:cover;background-position:center;flex-shrink:0"></span>' : '<span style="font-size:22px">'+(i.emoji||'📦')+'</span>'}
-              <div style="flex:1"><span style="font-size:14px;font-weight:600">${i.name}</span><span style="font-size:10px;color:var(--c-text-light);margin-left:4px">${i.category3||''}</span></div>
-              <span style="color:var(--c-text-light);font-size:10px">${i.unit||'斤'}</span>${marketPrices[i.id] ? '<span style="font-size:9px;color:var(--c-accent);margin-left:2px">均价¥'+marketPrices[i.id].avg+'</span>' : ''}${i.reference_price ? '<span style="font-size:9px;color:var(--c-text-light);margin-left:2px">市价¥'+i.reference_price+'</span>' : ''}
+              <div style="flex:1"><span style="font-size:14px;font-weight:600">${i.name}</span></div>
+              <span style="color:var(--c-text-light);font-size:10px">${i.unit||'斤'}</span>${marketPrices[i.id] ? '<span style="font-size:9px;color:var(--c-accent);margin-left:2px">均价¥'+marketPrices[i.id].avg+'</span>' : ''}${i.reference_price ? '<span style="font-size:9px;color:var(--c-text-light);margin-left:2px">市价¥'+i.reference_price+'</span>' : ''}${marketPrices[i.id]&&marketPrices[i.id].recent?marketPrices[i.id].recent.slice(0,2).map(function(p,pi){return '<span style="font-size:8px;color:var(--c-text-light);margin-left:2px;padding:0 3px;border-radius:2px;background:var(--c-warm)">¥'+p.price+'</span>'}).join(''):''}
               <span class="fav-btn" onclick="event.stopPropagation();toggleMarketFav('${i.id}',this)">${isMarketFaved(i.id)?'❤️':'♡'}</span>
               <span style="color:var(--c-text-light);font-size:12px">›</span>
             </div>`).join('') + '</div></div>';
@@ -4040,10 +4274,10 @@ function renderMarket() {
           '<span class="sub-arrow" style="font-size:10px">▸</span> ' + sc + ' (' + subItems.length + ')</div>' +
           '<div id="' + subId + '" class="market-category__body" style="display:none">' +
           subItems.map(i => `
-            <div class="market-ingredient-row" onclick="openPurchaseModal('${i.id}','${i.name}','${i.emoji}','${i.unit}')">
+            <div class="market-ingredient-row" onclick="openIngDetail('${i.id}')">
               ${i.image ? '<span style="width:36px;height:36px;border-radius:6px;background-image:url('+i.image+');background-size:cover;background-position:center;flex-shrink:0"></span>' : '<span style="font-size:20px">'+(i.emoji||'📦')+'</span>'}
               <span style="flex:1;font-size:14px">${i.name}<span style="font-size:10px;color:var(--c-text-light);margin-left:4px">${i.category3||''}</span></span>
-              <span style="color:var(--c-text-light);font-size:10px">${i.unit||'斤'}</span>${marketPrices[i.id] ? '<span style="font-size:9px;color:var(--c-accent);margin-left:2px">均价¥'+marketPrices[i.id].avg+'</span>' : ''}${i.reference_price ? '<span style="font-size:9px;color:var(--c-text-light);margin-left:2px">市价¥'+i.reference_price+'</span>' : ''}
+              <span style="color:var(--c-text-light);font-size:10px">${i.unit||'斤'}</span>${marketPrices[i.id] ? '<span style="font-size:9px;color:var(--c-accent);margin-left:2px">均价¥'+marketPrices[i.id].avg+'</span>' : ''}${i.reference_price ? '<span style="font-size:9px;color:var(--c-text-light);margin-left:2px">市价¥'+i.reference_price+'</span>' : ''}${marketPrices[i.id]&&marketPrices[i.id].recent?marketPrices[i.id].recent.slice(0,2).map(function(p,pi){return '<span style="font-size:8px;color:var(--c-text-light);margin-left:2px;padding:0 3px;border-radius:2px;background:var(--c-warm)">¥'+p.price+'</span>'}).join(''):''}
               <span class="fav-btn" onclick="event.stopPropagation();toggleMarketFav('${i.id}',this)">${isMarketFaved(i.id)?'❤️':'♡'}</span>
             </div>`).join('') + '</div></div>';
       }).join('');
@@ -4089,7 +4323,7 @@ async function openPurchaseModal(ingId, ingName, ingEmoji, ingUnit) {
   // 填充下拉
   const sel = document.getElementById('pur-ingredient');
   sel.innerHTML = allIngredients.map(i => `<option value="${i.id}" ${i.id === ingId ? 'selected' : ''}>${i.emoji||''} ${i.name}</option>`).join('');
-  sel.onchange = function() { loadPurHistory(this.value); };
+  sel.onchange = function() { updatePurIngImg(this.value); loadPurHistory(this.value); };
   document.getElementById('pur-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('pur-price').value = '';
   document.getElementById('pur-quantity').value = '';
@@ -4099,6 +4333,7 @@ async function openPurchaseModal(ingId, ingName, ingEmoji, ingUnit) {
   locSel.value = marketDefaultLoc || marketLocations[0] || '菜市场';
   document.getElementById('pur-note').value = '';
   document.getElementById('purchase-modal').classList.add('show');
+  updatePurIngImg(ingId);
   loadPurHistory(ingId);
 }
 
@@ -4122,14 +4357,14 @@ async function loadPurHistory(ingId) {
       var canvas = document.getElementById('pur-chart');
       if (canvas) {
         var dpr = window.devicePixelRatio || 1;
-        var rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width * dpr;
+        var cw = canvas.offsetWidth || 360;
+        canvas.width = cw * dpr;
         canvas.height = 100 * dpr;
-        canvas.style.width = rect.width + 'px';
+        canvas.style.width = cw + 'px';
         canvas.style.height = '100px';
         var ctx = canvas.getContext('2d');
         ctx.scale(dpr, dpr);
-        var w = rect.width, h = 100;
+        var w = cw, h = 100;
         ctx.clearRect(0, 0, w, h);
 
         var maxP = Math.max.apply(null, prices), minP = Math.min.apply(null, prices);
@@ -4233,6 +4468,41 @@ async function loadPurHistory(ingId) {
       section.style.display = 'none';
     }
   } catch(e) { section.style.display = 'none'; }
+}
+
+function updatePurIngImg(ingId) {
+  var img = document.getElementById('pur-ing-img');
+  if (!img) return;
+  var ing = allIngredients.find(function(i) { return i.id === ingId; });
+  if (ing && ing.image) {
+    img.style.backgroundImage = 'url(' + ing.image + ')';
+    img.style.backgroundSize = 'cover';
+    img.textContent = '';
+  } else {
+    img.style.backgroundImage = '';
+    img.textContent = ing ? (ing.emoji || '📦') : '📦';
+  }
+}
+async function uploadIngImg(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  var ingId = document.getElementById('pur-ingredient').value;
+  if (!ingId) return;
+  try {
+    var fd = new FormData(); fd.append('file', file);
+    var upRes = await fetch('/api/upload', { method:'POST', body:fd });
+    var upData = await upRes.json();
+    if (upData.url) {
+      await fetch('/api/ingredients/' + ingId, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({image:upData.url}) });
+      updatePurIngImg(ingId);
+      // 更新缓存
+      var ing = allIngredients.find(function(i){return i.id===ingId;});
+      if (ing) ing.image = upData.url;
+      var mIng = marketData.find(function(i){return i.id===ingId;});
+      if (mIng) mIng.image = upData.url;
+      showToast('图片已更新');
+    }
+  } catch(e) { showToast('上传失败'); }
 }
 
 function closePurchaseModal() { document.getElementById('purchase-modal').classList.remove('show'); }
@@ -4623,6 +4893,22 @@ function handleCingImagePicked(input) {
   reader.readAsDataURL(file);
 }
 
+var CING_CAT2_MAP = {
+  '畜禽肉类': ['畜肉','禽肉','蛋类'],
+  '鲜蔬类':   ['绿叶菜','瓜茄','根茎','菌菇','香辛'],
+  '水产海鲜': ['淡水鱼','海鱼','虾蟹贝','其他水产'],
+  '五谷干货': ['主食','面食','豆类','干果'],
+  '调味佐料': ['基础调味','酱汁','香料','油脂'],
+  '水果类':   ['常见水果']
+};
+function updateCingCat2() {
+  var cat1 = document.getElementById('cing-cat1')?.value;
+  var sel2 = document.getElementById('cing-cat2');
+  if (!sel2 || !cat1) return;
+  var opts = CING_CAT2_MAP[cat1] || ['其他'];
+  sel2.innerHTML = opts.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
+}
+
 async function showCustomIngredientForm() {
   _cingImageFile = null;
   var html = '<div style="padding:16px var(--page-px)">';
@@ -4632,7 +4918,9 @@ async function showCustomIngredientForm() {
   html += '<div id="cing-img-preview" onclick="document.getElementById(\'cing-image-file\').click()" style="width:100%;aspect-ratio:16/9;max-height:160px;border-radius:var(--radius-md);border:2px dashed var(--c-border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:40px;background:var(--c-surface);background-size:cover;background-position:center;overflow:hidden">📷</div>';
   html += '<input type="file" id="cing-image-file" accept="image/*" onchange="handleCingImagePicked(this)" style="display:none"></div>';
   html += '<div class="form-group"><label class="form-label">Emoji</label><input class="form-input" id="cing-emoji" placeholder="例如：🥑" value="📦"></div>';
-  html += '<div class="form-group"><label class="form-label">分类</label><select id="cing-cat1" style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--c-border);background:var(--c-bg)"><option value="畜禽肉类">🥩 畜禽肉类</option><option value="鲜蔬类">🥬 鲜蔬类</option><option value="水产海鲜">🐟 水产海鲜</option><option value="五谷干货">🌾 五谷干货</option><option value="调味佐料">🧂 调味佐料</option><option value="水果类">🍎 水果类</option></select></div>';
+  var cat2Opts = (CING_CAT2_MAP['畜禽肉类']||['其他']).map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
+  html += '<div class="form-group"><label class="form-label">一级分类</label><select id="cing-cat1" onchange="updateCingCat2()" style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--c-border);background:var(--c-bg)"><option value="畜禽肉类">🥩 畜禽肉类</option><option value="鲜蔬类">🥬 鲜蔬类</option><option value="水产海鲜">🐟 水产海鲜</option><option value="五谷干货">🌾 五谷干货</option><option value="调味佐料">🧂 调味佐料</option><option value="水果类">🍎 水果类</option></select></div>';
+  html += '<div class="form-group"><label class="form-label">二级分类</label><select id="cing-cat2" style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--c-border);background:var(--c-bg)">' + cat2Opts + '</select></div>';
   html += '<div class="form-group"><label class="form-label">单位</label><input class="form-input" id="cing-unit" placeholder="斤/个/克" value="斤"></div>';
   html += '<div class="form-group"><label class="form-label">保存方式</label><select id="cing-storage" style="width:100%;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--c-border);background:var(--c-bg)"><option value="room">常温</option><option value="fridge">冷藏</option><option value="freezer">冷冻</option></select></div>';
   html += '<div style="display:flex;gap:8px;margin-top:14px"><button onclick="closeModalSheet()" style="flex:1;padding:12px;background:var(--c-warm);border-radius:var(--radius-lg);font-size:14px;font-weight:600">取消</button>';
@@ -4658,39 +4946,28 @@ async function saveCustomIngredient() {
     image: imageUrl,
     emoji: document.getElementById('cing-emoji')?.value || '📦',
     category1: document.getElementById('cing-cat1')?.value || '鲜蔬类',
-    category2: '自定义',
+    category2: document.getElementById('cing-cat2')?.value || '其他',
     unit: document.getElementById('cing-unit')?.value || '斤',
     storage: document.getElementById('cing-storage')?.value || 'room',
     shelf_life_days: 7, is_system: 0
   };
   try {
-    await fetch('/api/ingredients', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    var res = await fetch('/api/ingredients', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    var created = await res.json();
     showToast('食材添加成功');
     closeModalSheet();
-    loadMarket();
+    // 直接插入本地缓存 + 刷新渲染
+    if (created.id) {
+      payload.id = created.id;
+      payload.is_system = 0;
+      payload.reference_price = null;
+      marketData.unshift(payload);
+      allIngredients.unshift(payload);
+    }
+    await loadMarket();
   } catch(e) { showToast('添加失败: ' + e.message); }
 }
 
-async function saveCustomIngredient() {
-  var name = document.getElementById('cing-name')?.value.trim();
-  if (!name) { showToast('请输入食材名称'); return; }
-  var id = 'ing_custom_' + Date.now();
-  var payload = {
-    id: id, name: name,
-    emoji: document.getElementById('cing-emoji')?.value || '📦',
-    category1: document.getElementById('cing-cat1')?.value || '鲜蔬类',
-    category2: '自定义',
-    unit: document.getElementById('cing-unit')?.value || '斤',
-    storage: document.getElementById('cing-storage')?.value || 'room',
-    shelf_life_days: 7, is_system: 0
-  };
-  try {
-    await fetch('/api/ingredients', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-    showToast('食材添加成功');
-    closeModalSheet();
-    loadMarket();
-  } catch(e) { showToast('添加失败: ' + e.message); }
-}
 
 // ----- 通用底部弹窗 -----
 function openModalSheet(html) {

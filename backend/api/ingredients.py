@@ -66,7 +66,7 @@ def create_ingredient():
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0, %s)",
             (ing_id, body['name'], body.get('emoji', '📦'), body.get('image', ''),
              body.get('category1', ''), body.get('category2', ''), body.get('unit', '斤'),
-             body.get('storage', 'room'), body.get('created_by', ''))
+             body.get('storage', 'room'), body.get('created_by') or None)
         )
         return jsonify({"id": ing_id, "message": "创建成功"}), 201
 
@@ -107,7 +107,7 @@ def delete_ingredient(ingredient_id):
 
 @ingredients_bp.route('/prices', methods=['GET'])
 def ingredient_prices():
-    """每个食材的最新购买价格和均价"""
+    """每个食材的最新购买价格、均价和最近3次历史价格"""
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute(
@@ -122,6 +122,25 @@ def ingredient_prices():
             result[row['ingredient_id']] = {
                 'latest': float(row['latest_price']) if row['latest_price'] else None,
                 'avg': round(float(row['avg_price']), 1) if row['avg_price'] else None,
-                'last_date': str(row['last_date']) if row['last_date'] else None
+                'last_date': str(row['last_date']) if row['last_date'] else None,
+                'recent': []
             }
+        # 最近3次购买记录
+        cur.execute(
+            "SELECT p.ingredient_id, p.price, p.purchase_date FROM purchases p "
+            "WHERE p.price > 0 ORDER BY p.ingredient_id, p.purchase_date DESC"
+        )
+        all_recent = cur.fetchall()
+        ing_recent = {}
+        for r in all_recent:
+            iid = r['ingredient_id']
+            if iid not in ing_recent: ing_recent[iid] = []
+            if len(ing_recent[iid]) < 3:
+                ing_recent[iid].append({
+                    'price': float(r['price']),
+                    'date': str(r['purchase_date'])
+                })
+        for iid, recents in ing_recent.items():
+            if iid in result:
+                result[iid]['recent'] = recents
         return jsonify(result)
