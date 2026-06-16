@@ -1,0 +1,444 @@
+Warning: A partial dump from a server that has GTIDs will by default include the GTIDs of all transactions, even those that changed suppressed parts of the database. If you don't want to restore GTIDs, pass --set-gtid-purged=OFF. To make a complete dump, pass --all-databases --triggers --routines --events. 
+Warning: A dump from a server that has GTIDs enabled will by default include the GTIDs of all transactions, even those that were executed during its extraction and might not be represented in the dumped data. This might result in an inconsistent data dump. 
+In order to ensure a consistent backup of the database, pass --single-transaction or --lock-all-tables or --source-data. 
+-- MySQL dump 10.13  Distrib 9.6.0, for macos26.4 (arm64)
+--
+-- Host: localhost    Database: caipu_app
+-- ------------------------------------------------------
+-- Server version	9.6.0
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+SET @MYSQLDUMP_TEMP_LOG_BIN = @@SESSION.SQL_LOG_BIN;
+SET @@SESSION.SQL_LOG_BIN= 0;
+
+--
+-- GTID state at the beginning of the backup 
+--
+
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ '4ba11cf6-6624-11f1-834f-0a61c9cda6da:1-626';
+
+--
+-- Table structure for table `checkins`
+--
+
+DROP TABLE IF EXISTS `checkins`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `checkins` (
+  `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '记录唯一标识',
+  `user_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '用户ID',
+  `checkin_date` date NOT NULL COMMENT '打卡日期',
+  `streak_count` int DEFAULT '1' COMMENT '连续打卡天数',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '打卡时间',
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `checkins_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='每日打卡记录表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `checkins`
+--
+
+LOCK TABLES `checkins` WRITE;
+/*!40000 ALTER TABLE `checkins` DISABLE KEYS */;
+INSERT INTO `checkins` VALUES ('ck_b8e21ec23f','test_user','2026-06-12',1,'2026-06-12 18:24:33');
+/*!40000 ALTER TABLE `checkins` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `feast_menu_dishes`
+--
+
+DROP TABLE IF EXISTS `feast_menu_dishes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `feast_menu_dishes` (
+  `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '记录唯一标识',
+  `menu_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '所属宴席菜单ID',
+  `recipe_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '菜品ID',
+  `feast_category` enum('cold','hot_meat','hot_veg','soup','staple','dessert') COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '宴席分类：凉菜/热荤/热素/汤羹/主食/甜品',
+  `sort_order` int DEFAULT '0' COMMENT '上菜排序',
+  PRIMARY KEY (`id`),
+  KEY `menu_id` (`menu_id`),
+  KEY `recipe_id` (`recipe_id`),
+  CONSTRAINT `feast_menu_dishes_ibfk_1` FOREIGN KEY (`menu_id`) REFERENCES `feast_menus` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `feast_menu_dishes_ibfk_2` FOREIGN KEY (`recipe_id`) REFERENCES `recipes` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='宴席菜品子表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `feast_menu_dishes`
+--
+
+LOCK TABLES `feast_menu_dishes` WRITE;
+/*!40000 ALTER TABLE `feast_menu_dishes` DISABLE KEYS */;
+/*!40000 ALTER TABLE `feast_menu_dishes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `feast_menus`
+--
+
+DROP TABLE IF EXISTS `feast_menus`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `feast_menus` (
+  `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '菜单唯一标识',
+  `tenant_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '所属家庭',
+  `name` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '宴席名称',
+  `template_type` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '模板类型：家常小聚/双人简餐/节日正餐/多人宴席/年夜饭',
+  `scene` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '宴席场景',
+  `servings` int DEFAULT '6' COMMENT '宴席人数',
+  `event_date` date DEFAULT NULL COMMENT '宴席日期',
+  `total_cost` decimal(10,2) DEFAULT NULL COMMENT '预估总花费',
+  `created_by` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建者userId',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后修改时间',
+  PRIMARY KEY (`id`),
+  KEY `tenant_id` (`tenant_id`),
+  KEY `created_by` (`created_by`),
+  CONSTRAINT `feast_menus_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `feast_menus_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='宴席菜单表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `feast_menus`
+--
+
+LOCK TABLES `feast_menus` WRITE;
+/*!40000 ALTER TABLE `feast_menus` DISABLE KEYS */;
+/*!40000 ALTER TABLE `feast_menus` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `ingredients`
+--
+
+DROP TABLE IF EXISTS `ingredients`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ingredients` (
+  `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '食材唯一标识',
+  `name` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '食材名称',
+  `emoji` varchar(8) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '食材emoji图标',
+  `category1` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '一级分类：畜禽肉类/鲜蔬类/水产海鲜/五谷干货/调味佐料/水果类',
+  `category2` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '二级分类：猪肉类/绿叶蔬菜/淡水鱼等',
+  `unit` varchar(16) COLLATE utf8mb4_unicode_ci DEFAULT '斤' COMMENT '默认单位',
+  `storage` enum('fridge','freezer','room') COLLATE utf8mb4_unicode_ci DEFAULT 'room' COMMENT '储存方式：冷藏/冷冻/常温',
+  `shelf_life_days` int DEFAULT NULL COMMENT '建议存放天数（冷藏/冷冻类）',
+  `is_system` tinyint(1) DEFAULT '1' COMMENT '是否系统预设（不可删除）',
+  `created_by` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '自定义食材的创建者userId',
+  PRIMARY KEY (`id`),
+  KEY `created_by` (`created_by`),
+  CONSTRAINT `ingredients_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='食材库表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `ingredients`
+--
+
+LOCK TABLES `ingredients` WRITE;
+/*!40000 ALTER TABLE `ingredients` DISABLE KEYS */;
+INSERT INTO `ingredients` VALUES ('ing_almond','杏仁','🥜','五谷干货','干果干货','斤','room',NULL,1,NULL),('ing_amaranth','苋菜','🥬','鲜蔬类','绿叶蔬菜','斤','fridge',2,1,NULL),('ing_apple','苹果','🍎','水果类','常见水果','斤','fridge',14,1,NULL),('ing_baby_cabbage','娃娃菜','🥬','鲜蔬类','绿叶蔬菜','斤','fridge',3,1,NULL),('ing_baby_pumpkin','贝贝南瓜','🎃','鲜蔬类','瓜茄果蔬','斤','room',NULL,1,NULL),('ing_bamboo_fungus','竹荪','🍄','鲜蔬类','菌菇杂蔬','斤','room',NULL,1,NULL),('ing_banana','香蕉','🍌','水果类','常见水果','斤','room',NULL,1,NULL),('ing_basa','巴沙鱼','🐟','水产海鲜','海鱼','斤','freezer',60,1,NULL),('ing_bass','鲈鱼','🐟','水产海鲜','淡水鱼','斤','fridge',2,1,NULL),('ing_bay_leaf','香叶','🌿','调味佐料','香料调味','两','room',NULL,1,NULL),('ing_bean_paste','豆瓣酱','🫗','调味佐料','酱汁调味','毫升','room',NULL,1,NULL),('ing_beech_mush','蟹味菇','🍄','鲜蔬类','菌菇杂蔬','斤','fridge',5,1,NULL),('ing_beef_brisket','牛腩','🐮','畜禽肉类','牛肉类','斤','fridge',3,1,NULL),('ing_beef_eye','牛里脊','🥩','畜禽肉类','牛肉类','斤','fridge',3,1,NULL),('ing_beef_omasum','牛百叶','🐮','畜禽肉类','牛肉类','斤','fridge',2,1,NULL),('ing_beef_rib','牛肋条','🐮','畜禽肉类','牛肉类','斤','fridge',3,1,NULL),('ing_beef_shank','牛腱子','🐮','畜禽肉类','牛肉类','斤','fridge',3,1,NULL),('ing_beef_slice','牛肉片','🥩','畜禽肉类','牛肉类','斤','fridge',3,1,NULL),('ing_beef_tallow','牛油','🥩','调味佐料','油脂类','斤','fridge',30,1,NULL),('ing_beef_tongue','牛舌','🐮','畜禽肉类','牛肉类','斤','fridge',2,1,NULL),('ing_bitter_gourd','苦瓜','🥒','鲜蔬类','瓜茄果蔬','斤','fridge',5,1,NULL),('ing_black_bean','黑豆','🫘','五谷干货','豆类杂粮','斤','room',NULL,1,NULL),('ing_black_pepper','黑胡椒粉','🧂','调味佐料','香料调味','两','room',NULL,1,NULL),('ing_black_rice','黑米','🍚','五谷干货','主食谷物','斤','room',NULL,1,NULL),('ing_bokchoy','上海青','🥬','鲜蔬类','绿叶蔬菜','斤','fridge',3,1,NULL),('ing_broccoli','西兰花','🥦','鲜蔬类','香辛配菜','斤','fridge',5,1,NULL),('ing_brown_rice','糙米','🍚','五谷干货','主食谷物','斤','room',NULL,1,NULL),('ing_brown_sugar','红糖','🍬','调味佐料','基础调味','斤','room',NULL,1,NULL),('ing_carrot','胡萝卜','🥕','鲜蔬类','根茎蔬菜','斤','fridge',7,1,NULL),('ing_catfish','鲶鱼','🐟','水产海鲜','淡水鱼','斤','fridge',2,1,NULL),('ing_cauliflower','花菜','🥦','鲜蔬类','香辛配菜','斤','fridge',5,1,NULL),('ing_celery','芹菜','🥬','鲜蔬类','香辛配菜','斤','fridge',5,1,NULL),('ing_celtuce','莴笋','🥬','鲜蔬类','根茎蔬菜','斤','fridge',5,1,NULL),('ing_century_egg','皮蛋','🥚','畜禽肉类','蛋类','个','room',NULL,1,NULL),('ing_cherry','樱桃','🍒','水果类','常见水果','斤','fridge',5,1,NULL),('ing_chicken_breast','鸡胸肉','🐔','畜禽肉类','禽肉类','斤','fridge',2,1,NULL),('ing_chicken_essence','鸡精','🧂','调味佐料','基础调味','斤','room',NULL,1,NULL),('ing_chicken_leg','鸡腿','🍗','畜禽肉类','禽肉类','斤','fridge',2,1,NULL),('ing_chicken_whole','整鸡','🐔','畜禽肉类','禽肉类','斤','fridge',2,1,NULL),('ing_chicken_wing','鸡翅','🍗','畜禽肉类','禽肉类','斤','fridge',2,1,NULL),('ing_chickpea','鹰嘴豆','🫘','五谷干货','豆类杂粮','斤','room',NULL,1,NULL),('ing_chili_oil','辣椒油','🌶️','调味佐料','油脂类','毫升','room',NULL,1,NULL),('ing_chili_sauce','辣椒酱','🌶️','调味佐料','酱汁调味','毫升','room',NULL,1,NULL),('ing_chive','韭菜','🌿','鲜蔬类','绿叶蔬菜','斤','fridge',2,1,NULL),('ing_choi_sum','菜心','🥬','鲜蔬类','绿叶蔬菜','斤','fridge',3,1,NULL),('ing_cilantro','香菜','🌿','鲜蔬类','绿叶蔬菜','斤','fridge',3,1,NULL),('ing_cinnamon','桂皮','🪵','调味佐料','香料调味','两','room',NULL,1,NULL),('ing_clam','花甲','🦪','水产海鲜','虾蟹贝类','斤','fridge',2,1,NULL),('ing_clams','花蛤','🦪','水产海鲜','虾蟹贝类','斤','fridge',2,1,NULL),('ing_cod','鳕鱼','🐟','水产海鲜','海鱼','斤','freezer',60,1,NULL),('ing_cooking_oil','食用油','🫒','调味佐料','油脂类','毫升','room',NULL,1,NULL),('ing_cooking_wine','料酒','🫗','调味佐料','酱汁调味','毫升','room',NULL,1,NULL),('ing_corn','玉米','🌽','五谷干货','主食谷物','斤','room',NULL,1,NULL),('ing_crab','螃蟹','🦀','水产海鲜','虾蟹贝类','斤','fridge',2,1,NULL),('ing_crayfish','小龙虾','🦞','水产海鲜','虾蟹贝类','斤','fridge',2,1,NULL),('ing_crown_daisy','茼蒿','🥬','鲜蔬类','绿叶蔬菜','斤','fridge',2,1,NULL),('ing_crucian_carp','鲫鱼','🐟','水产海鲜','淡水鱼','斤','fridge',2,1,NULL),('ing_cucumber','黄瓜','🥒','鲜蔬类','瓜茄果蔬','斤','fridge',5,1,NULL),('ing_cumin','孜然','🌿','调味佐料','香料调味','两','room',NULL,1,NULL),('ing_custom_0a38d5cc','蒜苗','📦','鲜蔬类','自定义','克','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_0ac751a8','牛肉粒','📦','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_0c68dd13','蒜苗','📦','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_132439a0','嫩豆腐','🥒','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_2a8a5cc5','牛肉','🥩','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_39480a15','蒜苗','📦','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_3cf6f3cf','牛肉','📦','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_475f2af8','豆豉','🥒','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_4eab9b2b','五花肉','📦','鲜蔬类','自定义','克','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_50d0502a','五花肉','🥩','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_606e6d1a','蒜苗','📦','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_60eadde0','蒜苗','🥬','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_6a9e96c7','蒜苗','📦','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_8577f4b7','蒜苗','🥬','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_8948920e','牛肉','📦','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_95ad4acc','五花肉','📦','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_a3f309a6','蒜苗','📦','鲜蔬类','自定义','根','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_ac52e4ad','牛肉','📦','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_acbd0196','五花肉','📦','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_ad01637b','蒜苗','📦','鲜蔬类','自定义','克','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_b36abe6a','五花肉','📦','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_bad8a2c1','五花肉','🥩','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_beef','牛肉','🥩','畜禽肉类','自定义','克','fridge',NULL,0,'wx_bzlqzuagcb'),('ing_custom_e13ee3dc','五花肉','📦','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_e1d5324b','蒜苗','🥬','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_f4810db4','五花肉','📦','鲜蔬类','自定义','克','room',NULL,0,'wx_bzlqzuagcb'),('ing_custom_f5582e9c','猪肉','🥩','鲜蔬类','自定义','适量','room',NULL,0,'wx_bzlqzuagcb'),('ing_cuttlefish','墨鱼','🦑','水产海鲜','其他水产','斤','freezer',60,1,NULL),('ing_dark_soy','老抽','🫗','调味佐料','酱汁调味','毫升','room',NULL,1,NULL),('ing_dragon_fruit','火龙果','🐉','水果类','常见水果','斤','room',NULL,1,NULL),('ing_dried_chili','干辣椒','🌶️','调味佐料','香料调味','两','room',NULL,1,NULL),('ing_dried_noodle','挂面','🍜','五谷干货','面食干货','斤','room',NULL,1,NULL),('ing_dried_scallop','干贝','🦪','水产海鲜','其他水产','斤','room',NULL,1,NULL),('ing_dried_shrimp','虾米','🦐','水产海鲜','其他水产','斤','room',NULL,1,NULL),('ing_duck','鸭肉','🦆','畜禽肉类','禽肉类','斤','fridge',2,1,NULL),('ing_duck_egg','鸭蛋','🥚','畜禽肉类','蛋类','个','room',NULL,1,NULL),('ing_duck_leg','鸭腿','🦆','畜禽肉类','禽肉类','斤','fridge',2,1,NULL),('ing_duck_neck','鸭脖','🦆','畜禽肉类','禽肉类','斤','fridge',2,1,NULL),('ing_duck_wing','鸭翅','🦆','畜禽肉类','禽肉类','斤','fridge',2,1,NULL),('ing_egg','鸡蛋','🥚','畜禽肉类','蛋类','个','room',NULL,1,NULL),('ing_eggplant','茄子','🍆','鲜蔬类','瓜茄果蔬','斤','fridge',5,1,NULL),('ing_enoki','金针菇','🍄','鲜蔬类','菌菇杂蔬','斤','fridge',5,1,NULL),('ing_fennel','小茴香','🌿','调味佐料','香料调味','两','room',NULL,1,NULL),('ing_fragrant_vinegar','香醋','🫗','调味佐料','酱汁调味','毫升','room',NULL,1,NULL),('ing_garlic','大蒜','🧄','鲜蔬类','根茎蔬菜','斤','room',NULL,1,NULL),('ing_garlic_scape','蒜苔','🌱','鲜蔬类','绿叶蔬菜','斤','fridge',3,1,NULL),('ing_garlic_sprout','蒜苗','🌱','鲜蔬类','绿叶蔬菜','斤','fridge',3,1,NULL),('ing_ginger','生姜','🫚','鲜蔬类','根茎蔬菜','斤','room',NULL,1,NULL),('ing_glutinous_rice','糯米','🍚','五谷干货','主食谷物','斤','room',NULL,1,NULL),('ing_goji','枸杞','🔴','五谷干货','干果干货','斤','room',NULL,1,NULL),('ing_goose','鹅肉','🦢','畜禽肉类','禽肉类','斤','fridge',2,1,NULL),('ing_grape','葡萄','🍇','水果类','常见水果','斤','fridge',7,1,NULL),('ing_grass_carp','草鱼','🐟','水产海鲜','淡水鱼','斤','fridge',2,1,NULL),('ing_green_onion','小葱','🌱','鲜蔬类','香辛配菜','斤','fridge',5,1,NULL),('ing_green_pepper','青椒','🫑','鲜蔬类','香辛配菜','斤','fridge',5,1,NULL),('ing_hairtail','带鱼','🐟','水产海鲜','海鱼','斤','freezer',60,1,NULL),('ing_instant_noodle','方便面','🍜','五谷干货','面食干货','斤','room',NULL,1,NULL),('ing_jellyfish','海蜇','🪼','水产海鲜','其他水产','斤','fridge',3,1,NULL),('ing_kale_ch','芥蓝','🥬','鲜蔬类','绿叶蔬菜','斤','fridge',3,1,NULL),('ing_ketchup','番茄酱','🥫','调味佐料','酱汁调味','毫升','room',NULL,1,NULL),('ing_kidney_bean','芸豆','🫘','五谷干货','豆类杂粮','斤','room',NULL,1,NULL),('ing_king_oyster','杏鲍菇','🍄','鲜蔬类','菌菇杂蔬','斤','fridge',5,1,NULL),('ing_kiwi','猕猴桃','🥝','水果类','常见水果','斤','fridge',7,1,NULL),('ing_lamb_chunk','羊肉块','🐑','畜禽肉类','羊肉类','斤','freezer',90,1,NULL),('ing_lamb_leg','羊腿肉','🐑','畜禽肉类','羊肉类','斤','freezer',90,1,NULL),('ing_lamb_offal','羊杂','🐑','畜禽肉类','羊肉类','斤','freezer',60,1,NULL),('ing_lamb_rib','羊排','🐑','畜禽肉类','羊肉类','斤','freezer',90,1,NULL),('ing_lamb_slice','羊肉卷','🐑','畜禽肉类','羊肉类','斤','freezer',90,1,NULL),('ing_lard','猪油','🥩','调味佐料','油脂类','斤','fridge',30,1,NULL),('ing_leek_onion','大葱','🌱','鲜蔬类','香辛配菜','斤','fridge',7,1,NULL),('ing_lettuce','生菜','🥬','鲜蔬类','绿叶蔬菜','斤','fridge',3,1,NULL),('ing_lettuce_oil','油麦菜','🥬','鲜蔬类','绿叶蔬菜','斤','fridge',3,1,NULL),('ing_light_soy','生抽','🫗','调味佐料','酱汁调味','毫升','room',NULL,1,NULL),('ing_lily_bulb','百合','🌺','五谷干货','干果干货','斤','room',NULL,1,NULL),('ing_longan','桂圆','🫐','五谷干货','干果干货','斤','room',NULL,1,NULL),('ing_longan_fruit','龙眼','🫐','水果类','常见水果','斤','fridge',3,1,NULL),('ing_lotus_root','莲藕','🪷','鲜蔬类','根茎蔬菜','斤','fridge',7,1,NULL),('ing_lotus_seed','莲子','🪷','五谷干货','干果干货','斤','room',NULL,1,NULL),('ing_luffa','丝瓜','🥒','鲜蔬类','瓜茄果蔬','斤','fridge',5,1,NULL),('ing_lychee','荔枝','🫐','水果类','常见水果','斤','fridge',3,1,NULL),('ing_mango','芒果','🥭','水果类','常见水果','斤','room',NULL,1,NULL),('ing_millet','小米','🫘','五谷干货','主食谷物','斤','room',NULL,1,NULL),('ing_msg','味精','🧂','调味佐料','基础调味','斤','room',NULL,1,NULL),('ing_mung_bean','绿豆','🫘','五谷干货','豆类杂粮','斤','room',NULL,1,NULL),('ing_noodle','面条','🍜','五谷干货','面食干货','斤','room',NULL,1,NULL),('ing_oats','燕麦','🌾','五谷干货','主食谷物','斤','room',NULL,1,NULL),('ing_onion','洋葱','🧅','鲜蔬类','香辛配菜','斤','room',NULL,1,NULL),('ing_orange','橙子','🍊','水果类','常见水果','斤','room',NULL,1,NULL),('ing_oyster','生蚝','🦪','水产海鲜','虾蟹贝类','斤','fridge',2,1,NULL),('ing_oyster_mush','平菇','🍄','鲜蔬类','菌菇杂蔬','斤','fridge',3,1,NULL),('ing_oyster_sauce','蚝油','🫗','调味佐料','酱汁调味','毫升','room',NULL,1,NULL),('ing_peanut','花生','🥜','五谷干货','干果干货','斤','room',NULL,1,NULL),('ing_pear','梨','🍐','水果类','常见水果','斤','fridge',14,1,NULL),('ing_pigeon','鸽子肉','🐦','畜禽肉类','禽肉类','斤','fridge',2,1,NULL),('ing_pineapple','菠萝','🍍','水果类','常见水果','斤','room',NULL,1,NULL),('ing_pork_belly','五花肉','🥩','畜禽肉类','猪肉类','斤','fridge',3,1,NULL),('ing_pork_ear','猪耳朵','🐷','畜禽肉类','猪肉类','斤','fridge',3,1,NULL),('ing_pork_heart','猪心','🐷','畜禽肉类','猪肉类','斤','fridge',2,1,NULL),('ing_pork_intestine','猪大肠','🐷','畜禽肉类','猪肉类','斤','fridge',2,1,NULL),('ing_pork_lean','瘦肉','🥩','畜禽肉类','猪肉类','斤','fridge',3,1,NULL),('ing_pork_liver','猪肝','🐷','畜禽肉类','猪肉类','斤','fridge',2,1,NULL),('ing_pork_rib','排骨','🍖','畜禽肉类','猪肉类','斤','fridge',3,1,NULL),('ing_pork_skin','猪皮','🐷','畜禽肉类','猪肉类','斤','fridge',3,1,NULL),('ing_pork_tender','里脊肉','🥩','畜禽肉类','猪肉类','斤','fridge',3,1,NULL),('ing_pork_tongue','猪舌头','🐷','畜禽肉类','猪肉类','斤','fridge',3,1,NULL),('ing_pork_tripe','猪肚','🐷','畜禽肉类','猪肉类','斤','fridge',2,1,NULL),('ing_pork_trotter','猪蹄','🐷','畜禽肉类','猪肉类','斤','fridge',3,1,NULL),('ing_potato','土豆','🥔','鲜蔬类','根茎蔬菜','斤','room',NULL,1,NULL),('ing_pumpkin','南瓜','🎃','鲜蔬类','瓜茄果蔬','斤','room',NULL,1,NULL),('ing_quail_egg','鹌鹑蛋','🥚','畜禽肉类','蛋类','个','room',NULL,1,NULL),('ing_radish','白萝卜','🥕','鲜蔬类','根茎蔬菜','斤','fridge',7,1,NULL),('ing_razor_clam','蛏子','🦪','水产海鲜','虾蟹贝类','斤','fridge',2,1,NULL),('ing_red_bean','红豆','🫘','五谷干货','豆类杂粮','斤','room',NULL,1,NULL),('ing_red_date','红枣','🫒','五谷干货','干果干货','斤','room',NULL,1,NULL),('ing_red_pepper','红椒','🫑','鲜蔬类','香辛配菜','斤','fridge',5,1,NULL),('ing_rice','大米','🍚','五谷干货','主食谷物','斤','room',NULL,1,NULL),('ing_rice_noodle','河粉','🍜','五谷干货','面食干货','斤','fridge',2,1,NULL),('ing_rice_vermicelli','米粉','🍜','五谷干货','面食干货','斤','room',NULL,1,NULL),('ing_rock_sugar','冰糖','🍬','调味佐料','基础调味','斤','room',NULL,1,NULL),('ing_salmon','三文鱼','🍣','水产海鲜','海鱼','斤','fridge',2,1,NULL),('ing_salt','食盐','🧂','调味佐料','基础调味','斤','room',NULL,1,NULL),('ing_salted_egg','咸鸭蛋','🥚','畜禽肉类','蛋类','个','room',NULL,1,NULL),('ing_saury','秋刀鱼','🐟','水产海鲜','海鱼','斤','freezer',60,1,NULL),('ing_scallion_oil','葱油','🌿','调味佐料','油脂类','毫升','room',NULL,1,NULL),('ing_scallop','扇贝','🦪','水产海鲜','虾蟹贝类','斤','fridge',2,1,NULL),('ing_sea_cucumber','海参','🪸','水产海鲜','其他水产','斤','freezer',90,1,NULL),('ing_sesame','芝麻','🫘','五谷干货','干果干货','斤','room',NULL,1,NULL),('ing_sesame_oil','香油','🫒','调味佐料','油脂类','毫升','room',NULL,1,NULL),('ing_shiitake','香菇','🍄','鲜蔬类','菌菇杂蔬','斤','fridge',5,1,NULL),('ing_shrimp','基围虾','🦐','水产海鲜','虾蟹贝类','斤','fridge',2,1,NULL),('ing_sichuan_oil','花椒油','🌶️','调味佐料','油脂类','毫升','room',NULL,1,NULL),('ing_sichuan_pepper','花椒','🌶️','调味佐料','香料调味','两','room',NULL,1,NULL),('ing_snakehead','黑鱼','🐟','水产海鲜','淡水鱼','斤','fridge',2,1,NULL),('ing_soybean','黄豆','🫘','五谷干货','豆类杂粮','斤','room',NULL,1,NULL),('ing_spinach','菠菜','🥬','鲜蔬类','绿叶蔬菜','斤','fridge',3,1,NULL),('ing_squid','鱿鱼','🦑','水产海鲜','其他水产','斤','freezer',60,1,NULL),('ing_star_anise','八角','⭐','调味佐料','香料调味','两','room',NULL,1,NULL),('ing_strawberry','草莓','🍓','水果类','常见水果','斤','fridge',3,1,NULL),('ing_sugar','白砂糖','🍬','调味佐料','基础调味','斤','room',NULL,1,NULL),('ing_sweet_bean','甜面酱','🫗','调味佐料','酱汁调味','毫升','room',NULL,1,NULL),('ing_tangerine','橘子','🍊','水果类','常见水果','斤','room',NULL,1,NULL),('ing_taro','芋头','🥔','鲜蔬类','根茎蔬菜','斤','room',NULL,1,NULL),('ing_tea_mush','茶树菇','🍄','鲜蔬类','菌菇杂蔬','斤','room',NULL,1,NULL),('ing_tilapia','罗非鱼','🐟','水产海鲜','淡水鱼','斤','fridge',2,1,NULL),('ing_tomato','西红柿','🍅','鲜蔬类','瓜茄果蔬','斤','room',NULL,1,NULL),('ing_vermicelli','粉丝','🫘','五谷干货','面食干货','斤','room',NULL,1,NULL),('ing_vinegar','陈醋','🫗','调味佐料','酱汁调味','毫升','room',NULL,1,NULL),('ing_walnut','核桃','🥜','五谷干货','干果干货','斤','room',NULL,1,NULL),('ing_water_chestnut','马蹄','🥔','鲜蔬类','根茎蔬菜','斤','room',NULL,1,NULL),('ing_water_spinach','空心菜','🥬','鲜蔬类','绿叶蔬菜','斤','fridge',2,1,NULL),('ing_watermelon','西瓜','🍉','水果类','常见水果','斤','fridge',7,1,NULL),('ing_wax_gourd','冬瓜','🎃','鲜蔬类','瓜茄果蔬','斤','room',NULL,1,NULL),('ing_white_beech','白玉菇','🍄','鲜蔬类','菌菇杂蔬','斤','fridge',5,1,NULL),('ing_white_pepper','白胡椒粉','🧂','调味佐料','香料调味','两','room',NULL,1,NULL),('ing_wide_vermicelli','粉条','🫘','五谷干货','面食干货','斤','room',NULL,1,NULL),('ing_wood_ear','木耳','🍄','鲜蔬类','菌菇杂蔬','斤','room',NULL,1,NULL),('ing_wuchang_bream','武昌鱼','🐟','水产海鲜','淡水鱼','斤','fridge',2,1,NULL),('ing_yam','山药','🥔','鲜蔬类','根茎蔬菜','斤','room',NULL,1,NULL),('ing_yellow_croaker','黄花鱼','🐟','水产海鲜','海鱼','斤','fridge',2,1,NULL),('ing_zucchini','西葫芦','🥒','鲜蔬类','瓜茄果蔬','斤','fridge',5,1,NULL);
+/*!40000 ALTER TABLE `ingredients` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `meal_plans`
+--
+
+DROP TABLE IF EXISTS `meal_plans`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `meal_plans` (
+  `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '记录唯一标识',
+  `tenant_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '所属家庭',
+  `plan_date` date NOT NULL COMMENT '规划日期',
+  `meal_type` enum('breakfast','lunch','dinner') COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '餐段：早餐/午餐/晚餐',
+  `recipe_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '菜品ID',
+  `servings` int DEFAULT '4' COMMENT '用餐人数',
+  `created_by` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建者userId',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `tenant_id` (`tenant_id`),
+  KEY `recipe_id` (`recipe_id`),
+  KEY `created_by` (`created_by`),
+  CONSTRAINT `meal_plans_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `meal_plans_ibfk_2` FOREIGN KEY (`recipe_id`) REFERENCES `recipes` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `meal_plans_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='点菜规划表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `meal_plans`
+--
+
+LOCK TABLES `meal_plans` WRITE;
+/*!40000 ALTER TABLE `meal_plans` DISABLE KEYS */;
+INSERT INTO `meal_plans` VALUES ('mp_7a27f83019','test_tenant','2026-06-17','breakfast','rec_1b0b170448',4,'test_user','2026-06-16 14:36:31'),('mp_8747ca98fa','test_tenant','2026-06-17','lunch','rec_8281cf20c6',4,'test_user','2026-06-16 16:56:13'),('mp_c04440d99f','test_tenant','2026-06-12','lunch',NULL,4,'test_user','2026-06-12 18:24:57'),('mp_cb4c4f6ce0','test_tenant','2026-06-16','dinner','rec_cfe35aa5b9',4,'test_user','2026-06-16 14:36:17'),('mp_cbd6aefc64','test_tenant','2026-06-16','lunch','rec_1b0b170448',4,'test_user','2026-06-16 14:36:13'),('mp_ffa1218364','test_tenant','2026-06-16','breakfast','rec_cfe35aa5b9',4,'test_user','2026-06-16 14:36:11');
+/*!40000 ALTER TABLE `meal_plans` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `purchases`
+--
+
+DROP TABLE IF EXISTS `purchases`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `purchases` (
+  `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '记录唯一标识',
+  `tenant_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '所属家庭（家庭级数据）',
+  `ingredient_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '食材ID',
+  `price` decimal(8,2) DEFAULT NULL COMMENT '单价',
+  `total_price` decimal(8,2) DEFAULT NULL COMMENT '总价',
+  `quantity` decimal(8,2) DEFAULT NULL COMMENT '数量',
+  `unit` varchar(16) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '购买单位',
+  `purchase_date` date DEFAULT NULL COMMENT '采购日期',
+  `location` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '购买地点',
+  `note` text COLLATE utf8mb4_unicode_ci COMMENT '备注',
+  `created_by` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '录入者userId',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `tenant_id` (`tenant_id`),
+  KEY `ingredient_id` (`ingredient_id`),
+  KEY `created_by` (`created_by`),
+  CONSTRAINT `purchases_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `purchases_ibfk_2` FOREIGN KEY (`ingredient_id`) REFERENCES `ingredients` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `purchases_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='采购记录表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `purchases`
+--
+
+LOCK TABLES `purchases` WRITE;
+/*!40000 ALTER TABLE `purchases` DISABLE KEYS */;
+INSERT INTO `purchases` VALUES ('pur_070abda0a3','test_tenant','ing_ginger',8.00,4.00,0.50,'斤','2026-06-10','超市','','wx_bzlqzuagcb','2026-06-16 14:46:19'),('pur_0d454b4653','test_tenant','ing_beef_eye',0.00,0.00,1.00,'斤','2026-06-16','菜市场','','test_user','2026-06-16 14:24:07'),('pur_134455da85','test_tenant','ing_light_soy',18.00,18.00,1.00,'瓶','2026-06-01','超市','','wx_bzlqzuagcb','2026-06-16 14:46:19'),('pur_3002bbab53','test_tenant','ing_tomato',5.00,10.00,2.00,'斤','2026-06-15','菜市场','','wx_bzlqzuagcb','2026-06-16 14:46:19'),('pur_3228c5efe6','test_tenant','ing_green_onion',5.00,1.50,0.30,'斤','2026-06-10','菜市场','','wx_bzlqzuagcb','2026-06-16 14:46:19'),('pur_3c2b2aad6c','test_tenant','ing_egg',15.00,15.00,1.00,'板','2026-06-15','超市','30枚','wx_bzlqzuagcb','2026-06-16 14:46:19'),('pur_5198d04f96','test_tenant','ing_bass',25.00,25.00,1.00,'斤','2026-06-14','菜市场','鲜活','wx_bzlqzuagcb','2026-06-16 14:46:19'),('pur_6284aa1e72','test_tenant','ing_salt',3.00,3.00,1.00,'袋','2026-06-01','超市','','wx_bzlqzuagcb','2026-06-16 14:46:19'),('pur_676137b8af','test_tenant','ing_pork_rib',28.50,71.25,2.50,'斤','2026-06-12','菜市场','','test_user','2026-06-12 18:24:57'),('pur_6fa6cc4fb1','test_tenant','ing_pork_belly',15.00,15.00,1.00,'斤','2026-06-16','菜市场','','test_user','2026-06-16 14:24:29'),('pur_7c6fafffbb','test_tenant','ing_pork_belly',19.00,19.00,1.00,'斤','2026-06-16','菜市场','','test_user','2026-06-16 14:24:52'),('pur_92e484861e','test_tenant','ing_pork_belly',18.00,18.00,1.00,'斤','2026-06-16','菜市场','','test_user','2026-06-16 14:24:47'),('pur_aef1c4a012','test_tenant','ing_cooking_oil',65.00,65.00,1.00,'桶','2026-06-01','超市','5L','wx_bzlqzuagcb','2026-06-16 14:46:19'),('pur_ba3db1ff53','test_tenant','ing_beef_rib',0.00,0.00,1.00,'斤','2026-06-16','菜市场','','test_user','2026-06-16 14:24:05'),('pur_f40e3c4427','test_tenant','ing_beef_rib',0.00,0.00,1.00,'斤','2026-06-16','菜市场','','test_user','2026-06-16 14:24:02'),('pur_fffe1f6be0','test_tenant','ing_pork_rib',32.00,64.00,2.00,'斤','2026-06-12','菜市场','精排','wx_bzlqzuagcb','2026-06-16 14:46:19');
+/*!40000 ALTER TABLE `purchases` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `recipe_ingredients`
+--
+
+DROP TABLE IF EXISTS `recipe_ingredients`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `recipe_ingredients` (
+  `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '记录唯一标识',
+  `recipe_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '所属菜谱ID',
+  `ingredient_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '食材ID',
+  `amount` decimal(8,2) DEFAULT NULL COMMENT '用量数值',
+  `unit` varchar(16) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位：克/毫升/个/勺/根',
+  `is_staple` tinyint(1) DEFAULT '0' COMMENT '是否主食（换算基准）',
+  `sort_order` int DEFAULT '0' COMMENT '排序序号',
+  PRIMARY KEY (`id`),
+  KEY `recipe_id` (`recipe_id`),
+  KEY `ingredient_id` (`ingredient_id`),
+  CONSTRAINT `recipe_ingredients_ibfk_1` FOREIGN KEY (`recipe_id`) REFERENCES `recipes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `recipe_ingredients_ibfk_2` FOREIGN KEY (`ingredient_id`) REFERENCES `ingredients` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='菜谱食材子表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `recipe_ingredients`
+--
+
+LOCK TABLES `recipe_ingredients` WRITE;
+/*!40000 ALTER TABLE `recipe_ingredients` DISABLE KEYS */;
+INSERT INTO `recipe_ingredients` VALUES ('ri_0a490ff1eb','rec_cfe35aa5b9','ing_garlic_sprout',4.00,'根',0,1),('ri_11ea9cf387','rec_1b0b170448','ing_tomato',300.00,'克',0,0),('ri_1a090e62a5','rec_129c0cc024','ing_custom_132439a0',100.00,'适量',0,0),('ri_1bf06912c9','rec_1b0b170448','ing_green_onion',5.00,'克',0,2),('ri_20d71716b0','rec_0d0a17ef8c','ing_light_soy',30.00,'毫升',0,4),('ri_22e63dbf4e','rec_1b0b170448','ing_sugar',5.00,'克',0,4),('ri_23643ae6ce','rec_0d0a17ef8c','ing_pork_rib',500.00,'克',0,0),('ri_24fb525ff4','rec_1b0b170448','ing_egg',3.00,'个',0,1),('ri_3a7b40ef31','rec_129c0cc024','ing_light_soy',0.00,'毫升',0,5),('ri_431466536d','rec_1b0b170448','ing_custom_f5582e9c',0.00,'适量',0,8),('ri_4e483a6ede','rec_129c0cc024','ing_salt',0.00,'克',0,6),('ri_50429666e0','rec_8281cf20c6','ing_bass',500.00,'克',0,1),('ri_5298624f4f','rec_0d0a17ef8c','ing_ginger',15.00,'克',0,1),('ri_55cfe416a2','rec_8281cf20c6','ing_cooking_oil',20.00,'毫升',0,5),('ri_57a8c7baab','rec_0d0a17ef8c','ing_rock_sugar',20.00,'克',0,6),('ri_5d3e71afa0','rec_1b0b170448','ing_custom_e1d5324b',0.00,'适量',0,6),('ri_7d32ff062f','rec_0d0a17ef8c','ing_green_onion',10.00,'克',0,2),('ri_830958ced2','rec_129c0cc024','ing_ginger',0.00,'克',0,3),('ri_88f1798438','rec_0d0a17ef8c','ing_star_anise',2.00,'个',0,3),('ri_a7a7d27132','rec_8281cf20c6','ing_light_soy',25.00,'毫升',0,4),('ri_b35af6b4e9','rec_0d0a17ef8c','ing_cooking_wine',20.00,'毫升',0,7),('ri_b38a5758ba','rec_129c0cc024','ing_custom_475f2af8',3.00,'适量',0,2),('ri_c100b573b0','rec_1b0b170448','ing_salt',3.00,'克',0,3),('ri_c20876eb19','rec_129c0cc024','ing_chicken_essence',0.00,'克',0,8),('ri_c5b039346d','rec_129c0cc024','ing_custom_8577f4b7',5.00,'适量',0,1),('ri_cf676d5eda','rec_129c0cc024','ing_msg',0.00,'克',0,7),('ri_cf6c92aac5','rec_0d0a17ef8c','ing_dark_soy',10.00,'毫升',0,5),('ri_dff30df92c','rec_1b0b170448','ing_cooking_oil',15.00,'毫升',0,5),('ri_ebe24bda23','rec_129c0cc024','ing_garlic',0.00,'瓣',0,4),('ri_ec0458553e','rec_1b0b170448','ing_custom_60eadde0',0.00,'适量',0,7),('ri_f8688c7d07','rec_8281cf20c6','ing_ginger',15.00,'克',0,3),('ri_fa041aec11','rec_cfe35aa5b9','ing_pork_belly',500.00,'克',0,0),('ri_ffedd54639','rec_8281cf20c6','ing_green_onion',20.00,'克',0,2);
+/*!40000 ALTER TABLE `recipe_ingredients` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `recipe_steps`
+--
+
+DROP TABLE IF EXISTS `recipe_steps`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `recipe_steps` (
+  `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '记录唯一标识',
+  `recipe_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '所属菜谱ID',
+  `step_number` int DEFAULT NULL COMMENT '步骤序号',
+  `description` text COLLATE utf8mb4_unicode_ci COMMENT '步骤文字',
+  `image` text COLLATE utf8mb4_unicode_ci COMMENT '步骤配图URL',
+  PRIMARY KEY (`id`),
+  KEY `recipe_id` (`recipe_id`),
+  CONSTRAINT `recipe_steps_ibfk_1` FOREIGN KEY (`recipe_id`) REFERENCES `recipes` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='菜谱步骤子表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `recipe_steps`
+--
+
+LOCK TABLES `recipe_steps` WRITE;
+/*!40000 ALTER TABLE `recipe_steps` DISABLE KEYS */;
+INSERT INTO `recipe_steps` VALUES ('rs_0372af5d45','rec_0d0a17ef8c',4,'加生抽、老抽翻炒均匀，倒入没过排骨的热水',NULL),('rs_040bb0b02a','rec_8281cf20c6',4,'倒掉盘中蒸出的腥水，淋上蒸鱼豉油',NULL),('rs_0b438a4c99','rec_0d0a17ef8c',1,'排骨洗净斩块，冷水下锅加料酒焯水，捞出冲洗干净',NULL),('rs_0bded0c3b8','rec_cfe35aa5b9',3,'锅中留底油，下豆瓣酱小火炒出红油',NULL),('rs_27460cae54','rec_0d0a17ef8c',5,'大火烧开转中小火炖30分钟，汤汁浓稠后大火收汁出锅',NULL),('rs_2f43e6c755','rec_1b0b170448',4,'加白糖和少许盐调味，倒回鸡蛋翻炒均匀',NULL),('rs_3db4731be6','rec_1b0b170448',3,'锅中再放少许油，下番茄块中火炒出汤汁',NULL),('rs_3e021cd073','rec_1b0b170448',2,'热锅凉油，倒入蛋液，快凝固时用筷子划散盛出',NULL),('rs_546b34ff0e','rec_cfe35aa5b9',4,'下姜片、大蒜爆香，倒回肉片翻炒均匀',NULL),('rs_663579709d','rec_8281cf20c6',1,'鲈鱼洗净，两面各划三刀，抹少许盐和料酒腌制10分钟',NULL),('rs_70d2fe3e2e','rec_8281cf20c6',2,'盘底铺姜片和葱段，放上鲈鱼',NULL),('rs_75bbb11154','rec_cfe35aa5b9',2,'锅中不放油，下肉片中火煸炒至出油卷曲呈灯盏窝状，盛出备用',NULL),('rs_7ee2948f91','rec_cfe35aa5b9',1,'五花肉冷水下锅，加姜片料酒煮至筷子能扎透，捞出切薄片',NULL),('rs_7f173e6b27','rec_0d0a17ef8c',3,'下排骨快速翻炒上色，加姜片、葱段、八角炒香',NULL),('rs_83fe97ebd4','rec_0d0a17ef8c',2,'锅中放少许油，小火炒冰糖至枣红色冒泡',NULL),('rs_8b62250418','rec_cfe35aa5b9',5,'加生抽、少许陈醋和味精调味，大火翻炒出锅',NULL),('rs_b0d2c227ba','rec_8281cf20c6',3,'蒸锅水开后上锅大火蒸8-10分钟',NULL),('rs_b59ef7e659','rec_1b0b170448',5,'撒上葱花出锅装盘',NULL),('rs_e643cddb96','rec_8281cf20c6',5,'铺上葱丝姜丝，浇上滚烫热油激出香味即可',NULL),('rs_ff382255f7','rec_1b0b170448',1,'番茄洗净切块，鸡蛋打散加少许盐和水淀粉搅匀',NULL);
+/*!40000 ALTER TABLE `recipe_steps` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `recipes`
+--
+
+DROP TABLE IF EXISTS `recipes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `recipes` (
+  `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '菜谱唯一标识',
+  `name` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '菜品名称',
+  `image` text COLLATE utf8mb4_unicode_ci COMMENT '菜品图片URL',
+  `emoji` varchar(8) COLLATE utf8mb4_unicode_ci DEFAULT 0xF09F8DB3 COMMENT '菜品emoji',
+  `tenant_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '所属家庭（null=个人私有）',
+  `owner_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '创建者userId',
+  `status` enum('mastered','learning') COLLATE utf8mb4_unicode_ci DEFAULT 'mastered' COMMENT '拿手菜/待学菜谱',
+  `category` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '分类：肉类/蔬菜/海鲜/素面食/汤类/饮品/甜品',
+  `difficulty` varchar(8) COLLATE utf8mb4_unicode_ci DEFAULT '3',
+  `cook_time` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '制作耗时',
+  `flavor_tags` json DEFAULT NULL COMMENT '口味标签数组：咸鲜/麻辣/酸甜/清淡/酱香等',
+  `meat_type` enum('meat','veg','mix') COLLATE utf8mb4_unicode_ci DEFAULT 'mix' COMMENT '荤/素/荤素搭配',
+  `servings` int DEFAULT '4' COMMENT '当前设定的用餐人数',
+  `staple_weight` decimal(8,2) DEFAULT NULL COMMENT '主食重量（克），null=未设定',
+  `is_favorited` tinyint(1) DEFAULT '0' COMMENT '是否收藏',
+  `is_shared` tinyint(1) DEFAULT '0' COMMENT '是否共享到家庭',
+  `notes` text COLLATE utf8mb4_unicode_ci COMMENT '备注/小贴士',
+  `source` text COLLATE utf8mb4_unicode_ci COMMENT '待学来源链接',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后修改时间',
+  PRIMARY KEY (`id`),
+  KEY `tenant_id` (`tenant_id`),
+  KEY `owner_id` (`owner_id`),
+  CONSTRAINT `recipes_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `recipes_ibfk_2` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='菜谱表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `recipes`
+--
+
+LOCK TABLES `recipes` WRITE;
+/*!40000 ALTER TABLE `recipes` DISABLE KEYS */;
+INSERT INTO `recipes` VALUES ('rec_0d0a17ef8c','红烧排骨','https://images.unsplash.com/photo-1544025162-d76694265947?w=600&h=600&fit=crop','🍳',NULL,'wx_bzlqzuagcb','mastered','meat','3','','[]','mix',4,NULL,0,0,'','','2026-06-16 14:40:05','2026-06-16 15:02:52'),('rec_129c0cc024','麻婆豆腐','/uploads/c13632bf28314371958e5a810bba7e79.png','🍳',NULL,'wx_bzlqzuagcb','mastered','meat','3','','[\"麻辣\"]','mix',3,NULL,0,0,'','','2026-06-16 17:00:03','2026-06-16 17:02:18'),('rec_1b0b170448','番茄炒蛋','https://images.unsplash.com/photo-1592417817098-8fd3d9eb14a5?w=600&h=600&fit=crop','🍳',NULL,'wx_bzlqzuagcb','mastered','','1','','[]','mix',4,NULL,0,0,'','','2026-06-16 14:40:06','2026-06-16 16:36:15'),('rec_8281cf20c6','清蒸鲈鱼','https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?w=600&h=600&fit=crop','🍳',NULL,'wx_bzlqzuagcb','mastered',NULL,'2',NULL,'[]','mix',4,NULL,0,0,'','','2026-06-16 14:40:06','2026-06-16 15:02:40'),('rec_cfe35aa5b9','回锅肉','/uploads/f91cb00455e040768a21ff6d9ca467a9.png','🍳',NULL,'wx_bzlqzuagcb','mastered','meat','3','30分钟','[\"咸鲜\", \"酱香\"]','meat',4,NULL,0,0,'','','2026-06-16 15:54:18','2026-06-16 17:02:13');
+/*!40000 ALTER TABLE `recipes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `tenant_members`
+--
+
+DROP TABLE IF EXISTS `tenant_members`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `tenant_members` (
+  `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '记录唯一标识',
+  `tenant_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '家庭ID',
+  `user_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '成员userId',
+  `role` enum('owner','member') COLLATE utf8mb4_unicode_ci DEFAULT 'member' COMMENT '角色',
+  `joined_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
+  PRIMARY KEY (`id`),
+  KEY `tenant_id` (`tenant_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `tenant_members_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `tenant_members_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='家庭成员表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `tenant_members`
+--
+
+LOCK TABLES `tenant_members` WRITE;
+/*!40000 ALTER TABLE `tenant_members` DISABLE KEYS */;
+/*!40000 ALTER TABLE `tenant_members` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `tenants`
+--
+
+DROP TABLE IF EXISTS `tenants`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `tenants` (
+  `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '家庭唯一标识',
+  `name` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '家庭名称',
+  `owner_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '户主userId',
+  `invite_code` varchar(16) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '邀请码/二维码标识',
+  `member_count` int DEFAULT '1' COMMENT '成员数',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后修改时间',
+  PRIMARY KEY (`id`),
+  KEY `owner_id` (`owner_id`),
+  CONSTRAINT `tenants_ibfk_1` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='家庭表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `tenants`
+--
+
+LOCK TABLES `tenants` WRITE;
+/*!40000 ALTER TABLE `tenants` DISABLE KEYS */;
+INSERT INTO `tenants` VALUES ('test_tenant','测试家庭','test_user','TEST001',1,'2026-06-12 18:24:45','2026-06-12 18:24:45');
+/*!40000 ALTER TABLE `tenants` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `users` (
+  `id` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '用户唯一标识，微信OpenID',
+  `nickname` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '微信昵称',
+  `avatar` text COLLATE utf8mb4_unicode_ci COMMENT '微信头像URL',
+  `default_servings` int DEFAULT '4' COMMENT '默认用餐人数',
+  `unit_preference` enum('g','jin') COLLATE utf8mb4_unicode_ci DEFAULT 'g' COMMENT '计量单位：克/斤',
+  `memory_enabled` tinyint(1) DEFAULT '1' COMMENT '配比记忆开关',
+  `home_tenant_id` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '当前加入的家庭ID',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后修改时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `users`
+--
+
+LOCK TABLES `users` WRITE;
+/*!40000 ALTER TABLE `users` DISABLE KEYS */;
+INSERT INTO `users` VALUES ('test_user','家庭大厨',NULL,4,'g',1,NULL,'2026-06-12 16:23:32','2026-06-12 16:23:32'),('wx_bzlqzuagcb','微信用户',NULL,4,'',1,NULL,'2026-06-16 14:33:31','2026-06-16 14:33:31');
+/*!40000 ALTER TABLE `users` ENABLE KEYS */;
+UNLOCK TABLES;
+SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-06-16 17:45:07
