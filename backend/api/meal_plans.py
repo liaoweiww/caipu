@@ -58,6 +58,9 @@ def upsert_plan():
                 (plan_id, body['tenant_id'], body['plan_date'], body['meal_type'],
                  body.get('recipe_id'), body.get('servings', 4), body.get('created_by'))
             )
+            # 菜谱做过次数 +1
+            if body.get('recipe_id'):
+                cur.execute("UPDATE recipes SET cook_count = cook_count + 1 WHERE id = %s", (body['recipe_id'],))
             return jsonify({"id": plan_id, "message": "创建成功"}), 201
 
 
