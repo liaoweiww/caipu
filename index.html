@@ -260,9 +260,11 @@ img { max-width: 100%; display: block; }
   gap: 8px;
   padding: 0 var(--page-px) 16px;
   overflow-x: auto;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-border) transparent;
 }
-.cat-bar::-webkit-scrollbar { display: none; }
+.cat-bar::-webkit-scrollbar { height: 4px; }
+.cat-bar::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 2px; }
 .cat-chip {
   flex-shrink: 0;
   padding: 8px 16px; min-height: 44px; display: flex; align-items: center;
@@ -1570,6 +1572,9 @@ img { max-width: 100%; display: block; }
 .shoplist-item__status--pending { background: var(--c-warm); color: var(--c-text-secondary); }
 .shoplist-item__status--done { background: var(--c-secondary); color: #fff; }
 
+.feast-dish-row { display:flex; gap:80px; line-height:2.2; width:260px; margin:0 auto }
+.feast-dish-col { width:90px; text-align:left; font-size:14px; cursor:pointer; color:var(--c-text) }
+.feast-dish-col:hover { color:var(--c-primary) }
 </style>
 </head>
 <body>
@@ -1605,6 +1610,12 @@ img { max-width: 100%; display: block; }
       </div>
       <div class="page-header__right">
         <span style="font-size:13px;color:var(--c-text-secondary)" id="dish-count">共 0 道菜</span>
+        <select id="recipe-sort" onchange="state.sortBy=this.value;renderRecipes()" style="font-size:12px;padding:4px 8px;border-radius:var(--radius-sm);border:1.5px solid var(--c-border);background:var(--c-surface);color:var(--c-text-secondary);cursor:pointer;outline:none">
+          <option value="updated">最近更新</option>
+          <option value="name">名称 A-Z</option>
+          <option value="cooks">做过最多</option>
+          <option value="difficulty">难度低→高</option>
+        </select>
         <div class="view-toggle" id="view-toggle">
           <button class="view-toggle__btn active" data-view="cols-2" aria-label="两列视图">⊞</button>
           <button class="view-toggle__btn" data-view="cols-3" aria-label="三列视图">⊟</button>
@@ -1630,13 +1641,6 @@ img { max-width: 100%; display: block; }
     <!-- 分类过滤 -->
     <div class="cat-bar" id="recipe-cats">
       <button class="cat-chip active" data-cat="all">全部</button>
-      <button class="cat-chip" data-cat="热菜">🍳 热菜</button>
-      <button class="cat-chip" data-cat="凉菜">🥗 凉菜</button>
-      <button class="cat-chip" data-cat="素菜">🥬 素菜</button>
-      <button class="cat-chip" data-cat="小吃">🥟 小吃</button>
-      <button class="cat-chip" data-cat="汤类">🥣 汤类</button>
-      <button class="cat-chip" data-cat="饮品">🍹 饮品</button>
-      <button class="cat-chip" data-cat="fav">❤️ 收藏</button>
     </div>
 
     <!-- 菜谱区域 -->
@@ -1888,91 +1892,39 @@ img { max-width: 100%; display: block; }
       </header>
       <input type="file" id="feast-banner-file" accept="image/*" onchange="uploadFeastBannerImg(this)" style="display:none">
 
-      <!-- 家宴编辑区：菜单风格 -->
-      <div style="margin:20px var(--page-px);background:rgba(255,255,255,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:var(--radius-lg);padding:28px 24px;box-shadow:var(--shadow-lg);text-align:center">
+      <!-- 家宴编辑区：精致菜单风格 -->
+      <div style="margin:20px var(--page-px);background:rgba(255,254,250,0.90);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:24px;padding:30px 24px 20px;box-shadow:0 8px 32px rgba(44,36,22,0.10),0 2px 8px rgba(44,36,22,0.06);border:1px solid rgba(201,169,110,0.18);text-align:center">
 
-        <!-- 标题（可点编辑） -->
-        <div id="feast-title" contenteditable="true" onblur="saveFeastTitle()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" style="font-family:var(--font-title);font-size:28px;font-weight:700;color:var(--c-primary-deep);margin-bottom:4px;letter-spacing:4px;outline:none;cursor:text;min-width:60px;display:inline-block;border-bottom:2px dashed transparent;transition:border-color 0.2s" onfocus="this.style.borderBottomColor='var(--c-accent)'" onblur="this.style.borderBottomColor='transparent';saveFeastTitle()">家 宴</div>
-        <div style="font-size:12px;color:var(--c-text-light);margin-bottom:24px" id="feast-date-label"></div>
-
-        <!-- 分类区 -->
-        <div id="feast-sections">
-          <!-- 热菜 -->
-          <div style="margin-bottom:20px">
-            <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px">
-            <span style="color:var(--c-accent);font-size:10px">✦</span>
-            <span style="font-family:var(--font-title);font-size:16px;font-weight:700;color:var(--c-primary-deep)">热菜</span>
-            <span style="color:var(--c-accent);font-size:10px">✦</span>
-            <button onclick="showFeastDishPicker('热菜')" style="width:22px;height:22px;border-radius:50%;background:var(--c-primary);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;border:none;box-shadow:0 2px 6px rgba(181,69,58,0.2)">＋</button>
-            </div>
-            <div id="feast-hot" style="min-height:28px;text-align:center">
-              <span style="font-size:12px;color:var(--c-text-light)">暂未添加</span>
-            </div>
-          </div>
-
-          <!-- 凉菜 -->
-          <div style="margin-bottom:20px">
-            <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px">
-            <span style="color:var(--c-accent);font-size:10px">✦</span>
-            <span style="font-family:var(--font-title);font-size:16px;font-weight:700;color:var(--c-primary-deep)">凉菜</span>
-            <span style="color:var(--c-accent);font-size:10px">✦</span>
-            <button onclick="showFeastDishPicker('凉菜')" style="width:22px;height:22px;border-radius:50%;background:var(--c-primary);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;border:none;box-shadow:0 2px 6px rgba(181,69,58,0.2)">＋</button>
-            </div>
-            <div id="feast-cold" style="min-height:28px;text-align:center">
-              <span style="font-size:12px;color:var(--c-text-light)">暂未添加</span>
-            </div>
-          </div>
-
-          <!-- 素菜 -->
-          <div style="margin-bottom:20px">
-            <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px">
-            <span style="color:var(--c-accent);font-size:10px">✦</span>
-            <span style="font-family:var(--font-title);font-size:16px;font-weight:700;color:var(--c-primary-deep)">素菜</span>
-            <span style="color:var(--c-accent);font-size:10px">✦</span>
-            <button onclick="showFeastDishPicker('素菜')" style="width:22px;height:22px;border-radius:50%;background:var(--c-primary);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;border:none;box-shadow:0 2px 6px rgba(181,69,58,0.2)">＋</button>
-            </div>
-            <div id="feast-veg" style="min-height:28px;text-align:center">
-              <span style="font-size:12px;color:var(--c-text-light)">暂未添加</span>
-            </div>
-          </div>
-
-          <!-- 汤菜 -->
-          <div style="margin-bottom:20px">
-            <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px">
-            <span style="color:var(--c-accent);font-size:10px">✦</span>
-            <span style="font-family:var(--font-title);font-size:16px;font-weight:700;color:var(--c-primary-deep)">汤菜</span>
-            <span style="color:var(--c-accent);font-size:10px">✦</span>
-            <button onclick="showFeastDishPicker('汤菜')" style="width:22px;height:22px;border-radius:50%;background:var(--c-primary);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;border:none;box-shadow:0 2px 6px rgba(181,69,58,0.2)">＋</button>
-            </div>
-            <div id="feast-soup" style="min-height:28px;text-align:center">
-              <span style="font-size:12px;color:var(--c-text-light)">暂未添加</span>
-            </div>
-          </div>
-
-          <!-- 小吃 -->
-          <div style="margin-bottom:6px">
-            <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px">
-            <span style="color:var(--c-accent);font-size:10px">✦</span>
-            <span style="font-family:var(--font-title);font-size:16px;font-weight:700;color:var(--c-primary-deep)">小吃</span>
-            <span style="color:var(--c-accent);font-size:10px">✦</span>
-            <button onclick="showFeastDishPicker('小吃')" style="width:22px;height:22px;border-radius:50%;background:var(--c-primary);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;border:none;box-shadow:0 2px 6px rgba(181,69,58,0.2)">＋</button>
-            </div>
-            <div id="feast-snack" style="min-height:28px;text-align:center">
-              <span style="font-size:12px;color:var(--c-text-light)">暂未添加</span>
-            </div>
-          </div>
+        <!-- 装饰顶线 -->
+        <div id="feast-deco-top" style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:6px">
+          <div style="width:36px;height:1px;background:linear-gradient(to right,transparent,var(--c-accent))"></div>
+          <span style="color:var(--c-accent);font-size:7px">◆</span>
+          <div style="width:36px;height:1px;background:linear-gradient(to left,transparent,var(--c-accent))"></div>
         </div>
 
-        <!-- 底部装饰线 -->
-        <div style="margin-top:20px;color:var(--c-accent);font-family:var(--font-title);font-size:13px;font-style:italic">— 家庭私厨 · 家的味道 —</div>
+        <!-- 标题（可点编辑） -->
+        <div id="feast-title" contenteditable="true" onblur="saveFeastTitle()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" style="font-family:var(--font-title);font-size:32px;font-weight:700;color:var(--c-primary-deep);margin-bottom:2px;letter-spacing:6px;outline:none;cursor:text;min-width:60px;display:inline-block;border-bottom:2px dashed transparent;transition:border-color 0.2s" onfocus="this.style.borderBottomColor='var(--c-accent)'" onblur="this.style.borderBottomColor='transparent';saveFeastTitle()">家 宴</div>
+        <div style="font-size:11px;color:var(--c-text-light);margin-bottom:16px;letter-spacing:2px" id="feast-date-label"></div>
+
+        <!-- 分割线 -->
+        <div style="width:40px;height:1px;background:var(--c-accent);margin:0 auto 18px;opacity:0.35"></div>
+
+        <!-- 分类区（动态渲染） -->
+        <div id="feast-sections"></div>
+
+        <!-- 底部分割线 -->
+        <div style="width:50px;height:1px;background:var(--c-accent);margin:24px auto 8px;opacity:0.3"></div>
+        <!-- 底部装饰 -->
+        <div id="feast-footer-text" style="color:var(--c-accent);font-family:var(--font-title);font-size:12px;font-style:italic;letter-spacing:1px">—  家庭私厨  ·  家的味道  —</div>
       </div>
 
-      <!-- 底部操作 -->
-      <div style="display:flex;gap:8px;padding:6px var(--page-px) 8px">
-        <button onclick="switchFeastTemplate()" style="flex:1;padding:12px;background:var(--c-surface);color:var(--c-text);border:1.5px solid var(--c-border);border-radius:var(--radius-lg);font-weight:600;font-size:13px">🎨 模板</button>
-        <button onclick="saveFeastRecord()" style="flex:1;padding:12px;background:var(--c-accent);color:#fff;border-radius:var(--radius-lg);font-weight:600;font-size:13px">💾 保存</button>
-        <button onclick="showFeastHistory()" style="flex:1;padding:12px;background:var(--c-surface);color:var(--c-text);border:1.5px solid var(--c-border);border-radius:var(--radius-lg);font-weight:600;font-size:13px">📋 记录</button>
-        <button onclick="exportFeastImage()" style="flex:1;padding:12px;background:var(--c-primary);color:#fff;border-radius:var(--radius-lg);font-weight:600;font-size:13px;box-shadow:0 4px 14px rgba(181,69,58,0.25)">📸 导出</button>
+      <!-- 底部操作：精致按钮组 -->
+      <div style="display:flex;gap:10px;padding:10px var(--page-px) 16px">
+        <button onclick="switchFeastTemplate()" onmouseover="this.style.background='var(--c-accent)';this.style.color='#fff';this.style.borderColor='var(--c-accent)'" onmouseout="this.style.background='rgba(255,255,255,0.75)';this.style.color='var(--c-accent)';this.style.borderColor='rgba(201,169,110,0.3)'" style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.75);backdrop-filter:blur(8px);border:1px solid rgba(201,169,110,0.3);color:var(--c-accent);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s var(--ease-smooth);flex-shrink:0" title="模板">🎨</button>
+        <button onclick="saveFeastRecord()" onmouseover="this.style.background='var(--c-accent)';this.style.color='#fff';this.style.borderColor='var(--c-accent)'" onmouseout="this.style.background='rgba(255,255,255,0.75)';this.style.color='var(--c-accent)';this.style.borderColor='rgba(201,169,110,0.3)'" style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.75);backdrop-filter:blur(8px);border:1px solid rgba(201,169,110,0.3);color:var(--c-accent);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s var(--ease-smooth);flex-shrink:0" title="保存">💾</button>
+        <button onclick="showFeastHistory()" onmouseover="this.style.background='var(--c-accent)';this.style.color='#fff';this.style.borderColor='var(--c-accent)'" onmouseout="this.style.background='rgba(255,255,255,0.75)';this.style.color='var(--c-accent)';this.style.borderColor='rgba(201,169,110,0.3)'" style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.75);backdrop-filter:blur(8px);border:1px solid rgba(201,169,110,0.3);color:var(--c-accent);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s var(--ease-smooth);flex-shrink:0" title="记录">📋</button>
+        <button onclick="showFeastSettings()" onmouseover="this.style.background='var(--c-accent)';this.style.color='#fff';this.style.borderColor='var(--c-accent)'" onmouseout="this.style.background='rgba(255,255,255,0.75)';this.style.color='var(--c-accent)';this.style.borderColor='rgba(201,169,110,0.3)'" style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.75);backdrop-filter:blur(8px);border:1px solid rgba(201,169,110,0.3);color:var(--c-accent);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s var(--ease-smooth);flex-shrink:0" title="家宴设置">⚙️</button>
+        <button onclick="exportFeastImage()" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(181,69,58,0.40)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(181,69,58,0.30)'" style="flex:1;padding:0 28px;height:40px;background:linear-gradient(135deg,var(--c-primary),var(--c-primary-deep));color:#fff;border:none;border-radius:20px;font-weight:600;font-size:14px;cursor:pointer;letter-spacing:1px;box-shadow:0 4px 16px rgba(181,69,58,0.30);transition:all 0.2s var(--ease-smooth);white-space:nowrap">📸 导出家宴</button>
       </div>
     </div><!-- end content layer -->
   </div>
@@ -2312,6 +2264,7 @@ const state = {
   currentCat: 'all',
   searchQuery: '',
   viewMode: 'cols-2',
+  sortBy: 'updated',
   recipes: [],
 
   // 点菜
@@ -2373,14 +2326,129 @@ document.querySelectorAll('#recipe-tags .tag-chip').forEach(chip => {
   });
 });
 
-// ----- 拿手菜：分类切换 -----
-document.querySelectorAll('#recipe-cats .cat-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    document.querySelectorAll('#recipe-cats .cat-chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    state.currentCat = chip.dataset.cat;
-    fetchRecipes();  // 重新拉数据，确保分类过滤生效
+// ----- 分类管理 -----
+var DEFAULT_CATS = [
+  { name:'热菜', emoji:'🍳' },{ name:'凉菜', emoji:'🥗' },{ name:'素菜', emoji:'🥬' },
+  { name:'小吃', emoji:'🥟' },{ name:'汤类', emoji:'🥣' },{ name:'饮品', emoji:'🍹' }
+];
+function loadCategories() {
+  try { var s = localStorage.getItem('caipu_categories'); if (s) { var arr = JSON.parse(s); if (arr && arr.length) return arr; } } catch(e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_CATS));
+}
+function saveCategories(cats) { localStorage.setItem('caipu_categories', JSON.stringify(cats)); }
+
+function renderCatBar() {
+  var cats = loadCategories();
+  var bar = document.getElementById('recipe-cats');
+  var html = '<button class="cat-chip' + (state.currentCat==='all'?' active':'') + '" data-cat="all">全部</button>';
+  cats.forEach(function(c) {
+    html += '<button class="cat-chip' + (state.currentCat===c.name?' active':'') + '" data-cat="' + c.name + '">' + c.emoji + ' ' + c.name + '</button>';
   });
+  html += '<button class="cat-chip' + (state.currentCat==='fav'?' active':'') + '" data-cat="fav">❤️ 收藏</button>';
+  html += '<button class="cat-chip" onclick="showCatManager()" style="border-style:dashed;opacity:0.6">⚙️ 管理</button>';
+  bar.innerHTML = html;
+}
+
+function showCatManager() {
+  var cats = loadCategories();
+  var html = '<div style="padding:8px var(--page-px) 20px"><h3 style="font-family:var(--font-title);font-size:18px;font-weight:700;margin-bottom:16px;text-align:center">⚙️ 分类管理（拖动排序 · 点击改名）</h3>';
+  html += '<div id="cat-mgr-list" style="max-height:50vh;overflow-y:auto">';
+  cats.forEach(function(c, i) {
+    html += '<div draggable="true" data-mgridx="' + i + '" class="cat-mgr-item" style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:4px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);cursor:grab;user-select:none;box-sizing:border-box;width:100%">';
+    html += '<span style="font-size:12px;color:var(--c-text-light);cursor:grab;width:16px;text-align:center;flex-shrink:0">⋮⋮</span>';
+    html += '<span class="cat-mgr-emoji" style="font-size:18px;cursor:pointer;width:28px;text-align:center;flex-shrink:0" data-idx="' + i + '">' + c.emoji + '</span>';
+    html += '<span class="cat-mgr-name" style="flex:1;font-size:14px;font-weight:500;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" data-idx="' + i + '">' + c.name + '</span>';
+    html += '<button class="cat-mgr-del" data-idx="' + i + '" style="color:var(--c-danger);padding:4px 6px;font-size:16px;background:none;border:none;cursor:pointer;flex-shrink:0;width:28px;text-align:center">✕</button>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div style="margin-top:12px;display:flex;gap:8px">';
+  html += '<input class="form-input" id="new-cat-name" placeholder="新分类名称" style="flex:1">';
+  html += '<button id="btn-add-cat" style="padding:8px 16px;background:var(--c-primary);color:#fff;border-radius:var(--radius-md);font-weight:600">添加</button>';
+  html += '</div>';
+  html += '<button id="btn-reset-cats" style="width:100%;padding:10px;background:var(--c-warm);border-radius:var(--radius-md);font-size:12px;margin-top:10px;color:var(--c-text-secondary)">↻ 恢复默认</button>';
+  html += '<button onclick="closeModalSheet()" style="width:100%;padding:10px;background:var(--c-warm);border-radius:var(--radius-md);font-size:13px;margin-top:8px">关闭</button>';
+  html += '</div>';
+  openModalSheet(html);
+
+  // 所有事件绑定
+  setTimeout(function(){ bindCatMgrEvents(); },300);
+}
+
+function bindCatMgrEvents() {
+    // 改名
+    document.querySelectorAll('.cat-mgr-name').forEach(function(el){ el.onclick=function(e){ e.stopPropagation();
+      var n=prompt('改名:',this.textContent); if(n&&n.trim()){ var cs=loadCategories(); cs[parseInt(this.dataset.idx)].name=n.trim(); saveCategories(cs); renderCatBar(); renderFeastEditor(); this.textContent=n.trim(); }
+    };});
+    // 改emoji
+    document.querySelectorAll('.cat-mgr-emoji').forEach(function(el){ el.onclick=function(e){ e.stopPropagation();
+      var v=prompt('新emoji:',this.textContent); if(v){ var cs=loadCategories(); cs[parseInt(this.dataset.idx)].emoji=v; saveCategories(cs); renderCatBar(); renderFeastEditor(); this.textContent=v; }
+    };});
+    // 删除
+    document.querySelectorAll('.cat-mgr-del').forEach(function(el){ el.onclick=function(e){ e.stopPropagation();
+      var i=parseInt(this.dataset.idx); var cs=loadCategories(); cs.splice(i,1); saveCategories(cs); renderCatBar(); renderFeastEditor(); this.parentElement.remove();
+    };});
+    // 添加
+    document.getElementById('btn-add-cat').onclick=function(){
+      var n=document.getElementById('new-cat-name').value.trim(); if(!n){showToast('请输入名称','warn');return;}
+      var cs=loadCategories(); cs.push({name:n,emoji:'📦'}); saveCategories(cs); hideCatFromFeast(n); renderCatBar(); renderFeastEditor();
+      document.getElementById('new-cat-name').value='';
+      // 追加到列表
+      var list=document.getElementById('cat-mgr-list');
+      var i=cs.length-1;
+      var div=document.createElement('div'); div.className='cat-mgr-item'; div.draggable=true; div.dataset.mgridx=i;
+      div.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:4px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);cursor:grab;user-select:none;box-sizing:border-box;width:100%';
+      div.innerHTML='<span style="font-size:12px;color:var(--c-text-light);cursor:grab;width:16px;text-align:center;flex-shrink:0">⋮⋮</span><span class="cat-mgr-emoji" style="font-size:18px;cursor:pointer;width:28px;text-align:center;flex-shrink:0" data-idx="'+i+'">📦</span><span class="cat-mgr-name" style="flex:1;font-size:14px;font-weight:500;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" data-idx="'+i+'">'+n+'</span><button class="cat-mgr-del" data-idx="'+i+'" style="color:var(--c-danger);padding:4px 6px;font-size:16px;background:none;border:none;cursor:pointer;flex-shrink:0;width:28px;text-align:center">✕</button>';
+      list.appendChild(div);
+    };
+    // 恢复默认
+    document.getElementById('btn-reset-cats').onclick=function(){
+      if(!confirm('恢复默认分类？')) return;
+      localStorage.removeItem('caipu_categories'); renderCatBar(); renderFeastEditor();
+      document.getElementById('cat-mgr-list').innerHTML = loadCategories().map(function(c,i){
+        return '<div draggable="true" data-mgridx="'+i+'" class="cat-mgr-item" style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:4px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);cursor:grab;user-select:none;box-sizing:border-box;width:100%"><span style="font-size:12px;color:var(--c-text-light);cursor:grab;width:16px;text-align:center;flex-shrink:0">⋮⋮</span><span class="cat-mgr-emoji" style="font-size:18px;cursor:pointer;width:28px;text-align:center;flex-shrink:0" data-idx="'+i+'">'+c.emoji+'</span><span class="cat-mgr-name" style="flex:1;font-size:14px;font-weight:500;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" data-idx="'+i+'">'+c.name+'</span><button class="cat-mgr-del" data-idx="'+i+'" style="color:var(--c-danger);padding:4px 6px;font-size:16px;background:none;border:none;cursor:pointer;flex-shrink:0;width:28px;text-align:center">✕</button></div>';
+      }).join('');
+    };
+    // 拖拽排序
+    var items=document.querySelectorAll('.cat-mgr-item'), dragIdx=-1;
+    items.forEach(function(item){
+      item.addEventListener('dragstart',function(e){dragIdx=parseInt(this.dataset.mgridx);this.style.opacity='0.4'});
+      item.addEventListener('dragend',function(e){this.style.opacity='1';});
+      item.addEventListener('dragover',function(e){e.preventDefault();this.style.borderTop='2px solid var(--c-primary)'});
+      item.addEventListener('dragleave',function(e){this.style.borderTop=''});
+      item.addEventListener('drop',function(e){
+        e.preventDefault();this.style.borderTop='';
+        var toIdx=parseInt(this.dataset.mgridx);
+        if(dragIdx>=0&&dragIdx!==toIdx){
+          var cs=loadCategories();var moved=cs.splice(dragIdx,1)[0];cs.splice(toIdx,0,moved);saveCategories(cs);
+          renderCatBar();renderFeastEditor();
+          // 用新数据重绘列表
+          var nc = loadCategories();
+          var h = '';
+          nc.forEach(function(c,idx){ h+='<div draggable="true" data-mgridx="'+idx+'" class="cat-mgr-item" style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:4px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);cursor:grab;user-select:none;box-sizing:border-box;width:100%"><span style="font-size:12px;color:var(--c-text-light);cursor:grab;width:16px;text-align:center;flex-shrink:0">⋮⋮</span><span class="cat-mgr-emoji" style="font-size:18px;cursor:pointer;width:28px;text-align:center;flex-shrink:0" data-idx="'+idx+'">'+c.emoji+'</span><span class="cat-mgr-name" style="flex:1;font-size:14px;font-weight:500;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" data-idx="'+idx+'">'+c.name+'</span><button class="cat-mgr-del" data-idx="'+idx+'" style="color:var(--c-danger);padding:4px 6px;font-size:16px;background:none;border:none;cursor:pointer;flex-shrink:0;width:28px;text-align:center">✕</button></div>'; });
+          document.getElementById('cat-mgr-list').innerHTML=h;
+          bindCatMgrEvents();
+        }
+      });
+    });
+  } // end bindCatMgrEvents
+
+// 初始化分类栏 + 鼠标滚轮横向滚动
+renderCatBar();
+document.getElementById('recipe-cats').addEventListener('wheel', function(e) {
+  e.preventDefault();
+  this.scrollLeft += e.deltaY;
+});
+
+// ----- 拿手菜：分类切换（事件委托）-----
+document.getElementById('recipe-cats').addEventListener('click', function(e) {
+  var chip = e.target.closest('.cat-chip');
+  if (!chip || chip.dataset.cat === undefined) return;
+  if (chip.onclick) return; // 管理按钮有自己的事件
+  document.querySelectorAll('#recipe-cats .cat-chip').forEach(function(c) { c.classList.remove('active'); });
+  chip.classList.add('active');
+  state.currentCat = chip.dataset.cat;
+  fetchRecipes();
 });
 
 // ----- 拿手菜：视图切换 -----
@@ -2614,12 +2682,9 @@ async function fetchRecipes() {
     if (state.currentCat === 'fav') params.set('is_favorited', '1');
     if (state.searchQuery) params.set('search', state.searchQuery);
 
-    console.log('🔍 fetchRecipes params:', params.toString(), 'userId:', getUserId());
     const res = await fetch(`${API_BASE}/recipes?${params}`);
     const json = await res.json();
-    console.log('📦 API returned:', json.data ? json.data.length : 'no data', 'recipes');
     recipeData = json.data || [];
-    console.log('📦 recipeData length:', recipeData.length);
     renderRecipes();
   } catch (e) {
     console.log('❌ API 未连接:', e.message);
@@ -2630,7 +2695,6 @@ async function fetchRecipes() {
 // ----- 渲染（增强版）-----
 function renderRecipes() {
   let filtered = recipeData.length ? recipeData : state.recipes;
-  console.log('🎨 renderRecipes: recipeData len=', recipeData.length, 'state.recipes len=', state.recipes.length, 'currentTag=', state.currentTag);
   // 标签过滤
   if (state.currentTag === 'personal') filtered = filtered.filter(r => !r.tenant_id && r.status !== 'learning');
   else if (state.currentTag === 'family') filtered = filtered.filter(r => r.tenant_id);
@@ -2647,7 +2711,13 @@ function renderRecipes() {
     var q = state.searchQuery.toLowerCase();
     filtered = filtered.filter(r => (r.name && r.name.toLowerCase().includes(q)) || (r.notes && r.notes.toLowerCase().includes(q)));
   }
-  console.log('🎨 after filter:', filtered.length, 'recipes');
+
+  // 排序
+  var sortBy = state.sortBy || 'updated';
+  if (sortBy === 'name') filtered.sort(function(a,b){ return (a.name||'').localeCompare(b.name||'','zh'); });
+  else if (sortBy === 'cooks') filtered.sort(function(a,b){ return (b.cook_count||0) - (a.cook_count||0); });
+  else if (sortBy === 'difficulty') filtered.sort(function(a,b){ return (parseInt(a.difficulty)||3) - (parseInt(b.difficulty)||3); });
+  else filtered.sort(function(a,b){ return (b.updated_at||'').localeCompare(a.updated_at||''); });
 
   const container = document.getElementById('recipe-container');
   const empty = document.getElementById('recipe-empty');
@@ -5645,9 +5715,27 @@ document.querySelectorAll('.scene-card').forEach(card => {
 });
 
 // ====== 家宴数据结构 ======
-var feastDishes = { '热菜': [], '凉菜': [], '素菜': [], '汤菜': [], '小吃': [] };
+// 家宴分类 = 全局分类 减去 隐藏的分类
+function loadHiddenCats() { try{ var s=localStorage.getItem('caipu_hidden_cats'); return s?JSON.parse(s):[]; }catch(e){return[];} }
+function saveHiddenCats(arr) { localStorage.setItem('caipu_hidden_cats', JSON.stringify(arr)); }
+function getFeastCats() {
+  var hidden = loadHiddenCats();
+  return loadCategories().map(function(c){return c.name;}).filter(function(n){ return hidden.indexOf(n)<0; });
+}
+function hideCatFromFeast(catName) { var h=loadHiddenCats(); if(h.indexOf(catName)<0)h.push(catName); saveHiddenCats(h); }
+function showCatInFeast(catName) { var h=loadHiddenCats().filter(function(n){return n!==catName;}); saveHiddenCats(h); }
+function getFeastDishes() {
+  var d = {};
+  getFeastCats().forEach(function(c){ d[c] = []; });
+  return d;
+}
+var feastDishes = getFeastDishes();
 var feastTemplate = 0;
 var feastTitle = '家 宴';
+var feastShowTitle = true;
+var feastShowDate = true;
+var feastFooterText = '家庭私厨  ·  家的味道';
+var feastShowFooter = true;
 
 // ====== 家宴标题保存 ======
 function saveFeastTitle() {
@@ -5664,15 +5752,21 @@ function loadFeastTitle() {
 
 // ====== 家宴：加载（从 localStorage 恢复）======
 function loadFeasts() {
+  // 清理旧冲突数据
   try {
     var saved = localStorage.getItem('caipu_feast_dishes');
     if (saved) feastDishes = JSON.parse(saved);
-  } catch(e) {}
+  } catch(e) { feastDishes = getFeastDishes(); }
+  if (!feastDishes || Object.keys(feastDishes).length === 0) feastDishes = getFeastDishes();
   try {
     var t = localStorage.getItem('caipu_feast_template');
     if (t !== null) feastTemplate = parseInt(t);
   } catch(e) {}
   loadFeastTitle();
+  try { var s = localStorage.getItem('caipu_feast_showTitle'); if (s!==null) feastShowTitle = s==='1'; } catch(e){}
+  try { var s = localStorage.getItem('caipu_feast_showDate'); if (s!==null) feastShowDate = s==='1'; } catch(e){}
+  var ft = localStorage.getItem('caipu_feast_footer'); if (ft) feastFooterText = ft;
+  var sf = localStorage.getItem('caipu_feast_showFooter'); if (sf!==null) feastShowFooter = sf==='1';
   renderFeastEditor();
   if (typeof updateFeastBanner === 'function') updateFeastBanner();
 }
@@ -5680,31 +5774,66 @@ function saveFeastDishes() {
   localStorage.setItem('caipu_feast_dishes', JSON.stringify(feastDishes));
 }
 
+// ====== 家宴：渲染分类区结构 ======
+function renderFeastSections() {
+  var cats = getFeastCats();
+  var html = '';
+  cats.forEach(function(cat, i) {
+    var isLast = i === cats.length - 1;
+    html += '<div style="margin-bottom:' + (isLast ? '0' : '14px') + ';padding-bottom:' + (isLast ? '0' : '14px') + ';border-bottom:' + (isLast ? 'none' : '1px dashed rgba(201,169,110,0.18)') + '">';
+    html += '<div style="position:relative;text-align:center;margin-bottom:6px">';
+    html += '<span style="color:var(--c-accent);font-size:9px">◆</span>';
+    html += '<span style="font-family:var(--font-title);font-size:16px;font-weight:700;color:var(--c-primary-deep)"> ' + cat + ' </span>';
+    html += '<span style="color:var(--c-accent);font-size:9px">◆</span>';
+    html += '<button onclick="showFeastDishPicker(\'' + cat + '\')" style="position:absolute;right:0;top:0;width:20px;height:20px;border-radius:50%;background:var(--c-primary);color:#fff;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;border:none;box-shadow:0 2px 6px rgba(181,69,58,0.2)">＋</button>';
+    html += '</div>';
+    html += '<div id="feast-sec-' + i + '" style="min-height:24px">';
+    html += '<span style="font-size:12px;color:var(--c-text-light)">暂未添加</span>';
+    html += '</div></div>';
+  });
+  document.getElementById('feast-sections').innerHTML = html;
+}
+
 // ====== 家宴：渲染编辑器 ======
 function renderFeastEditor() {
-  // 更新日期
+  // 同步分类键
+  var newKeys = getFeastCats();
+  var newD = {};
+  newKeys.forEach(function(k){ newD[k] = feastDishes[k] || []; });
+  feastDishes = newD;
+  renderFeastSections();
+  // 标题和日期显隐
+  var titleEl = document.getElementById('feast-title');
+  var decoEl = document.getElementById('feast-deco-top');
   var dateEl = document.getElementById('feast-date-label');
-  if (dateEl) {
+  var footerEl = document.getElementById('feast-footer-text');
+  if (titleEl) titleEl.style.display = feastShowTitle ? '' : 'none';
+  if (decoEl) decoEl.style.display = feastShowTitle ? '' : 'none';
+  if (dateEl) { dateEl.style.display = feastShowDate ? '' : 'none';
     var now = new Date();
     dateEl.textContent = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日';
   }
+  if (footerEl) { footerEl.style.display = feastShowFooter ? '' : 'none'; footerEl.textContent = '—  ' + feastFooterText + '  —'; }
 
-  var cats = ['热菜', '凉菜', '素菜', '汤菜', '小吃'];
-  var ids = ['feast-hot', 'feast-cold', 'feast-veg', 'feast-soup', 'feast-snack'];
-  cats.forEach(function(cat, i) {
-    var el = document.getElementById(ids[i]);
+  var cats = getFeastCats();
+  cats.forEach(function(cat, catIdx) {
+    var el = document.getElementById('feast-sec-' + catIdx);
     if (!el) return;
     var dishes = feastDishes[cat] || [];
 
     if (!dishes.length) {
-      el.innerHTML = '<span style="font-size:12px;color:var(--c-text-light);text-align:center;display:block;width:100%">暂未添加</span>';
+      el.innerHTML = '<div style="text-align:center;font-size:12px;color:var(--c-text-light)">暂未添加</div>';
       return;
     }
 
-    var items = dishes.map(function(d, idx) {
-      return '<div style="font-size:14px;color:var(--c-text);padding:3px 0;cursor:pointer;transition:all 0.15s;width:50%;display:inline-block;text-align:center" onclick="removeFeastDish(\'' + cat + '\',' + idx + ')" title="点击移除">' + d.name + '</div>';
-    });
-    el.innerHTML = items.join('');
+    var html = '';
+    for (var j = 0; j < dishes.length; j += 2) {
+      html += '<div class="feast-dish-row">';
+      html += '<span class="feast-dish-col" onclick="removeFeastDish(\'' + cat + '\',' + j + ')" title="点击移除">' + dishes[j].name + '</span>';
+      if (dishes[j+1]) html += '<span class="feast-dish-col" onclick="removeFeastDish(\'' + cat + '\',' + (j+1) + ')" title="点击移除">' + dishes[j+1].name + '</span>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
   });
 }
 
@@ -5717,21 +5846,20 @@ function showFeastDishPicker(cat) {
 
   // 按分类联动：点热菜只显热菜，点凉菜只显凉菜...
   // 汤菜 → 对应 汤类；小吃 → 对应 小吃
-  var catMap = { '热菜': '热菜', '凉菜': '凉菜', '素菜': '素菜', '汤菜': '汤类', '小吃': '小吃' };
+  // 分类联动：家宴分类名 = 拿手菜分类名（同名对应）
+  var catMap = {}; loadCategories().forEach(function(c){ catMap[c.name] = c.name; });
   var filterCat = catMap[cat] || '';
   var filtered = filterCat ? list.filter(function(r) { return r.category === filterCat; }) : list;
-  // 如果该分类没有菜品，显示全部
-  if (!filtered.length) filtered = list;
 
   var alreadyIds = (feastDishes[cat] || []).map(function(d) { return d.id; });
 
   var html = '<div style="padding:8px var(--page-px) 20px">';
   html += '<h3 style="font-family:var(--font-title);font-size:18px;font-weight:700;margin-bottom:4px">＋ 添加' + cat + '</h3>';
   html += '<div style="font-size:12px;color:var(--c-text-light);margin-bottom:14px">共 ' + filtered.length + ' 道可选</div>';
-  html += '<div style="max-height:50vh;overflow-y:auto">';
+  html += '<div id="feast-pick-list" style="max-height:50vh;overflow-y:auto">';
   filtered.forEach(function(r) {
     var added = alreadyIds.indexOf(r.id) >= 0;
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--c-border);cursor:pointer;' + (added ? 'opacity:0.4' : '') + '" onclick="' + (added ? '' : 'addFeastDish(\'' + r.id + '\',\'' + (r.name||'').replace(/'/g,"\\'") + '\',\'' + (r.emoji||'🍳') + '\')') + '">';
+    html += '<div data-rid="' + r.id + '" style="display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--c-border);cursor:pointer;' + (added ? 'opacity:0.4' : '') + '" onclick="' + (added ? '' : 'addFeastDish(\'' + r.id + '\',\'' + (r.name||'').replace(/'/g,"\\'") + '\',\'' + (r.emoji||'🍳') + '\')') + '">';
     html += '<span style="font-size:24px">' + (r.emoji || '🍳') + '</span>';
     html += '<span style="flex:1;font-size:14px;font-weight:500">' + r.name + '</span>';
     html += '<span style="font-size:12px;color:var(--c-text-light)">' + (added ? '已添加' : '＋添加') + '</span>';
@@ -5749,7 +5877,16 @@ function addFeastDish(id, name, emoji) {
   feastDishes[_feastPickCat].push({ id: id, name: name, emoji: emoji || '🍳' });
   saveFeastDishes();
   renderFeastEditor();
-  closeModalSheet();
+  // 直接改当前列表项的样式，不重载窗口
+  var rows = document.querySelectorAll('#feast-pick-list > div');
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].dataset.rid === id) {
+      rows[i].style.opacity = '0.4';
+      rows[i].onclick = null;
+      var s = rows[i].querySelector('span:last-child');
+      if (s) s.textContent = '已添加';
+    }
+  }
 }
 
 // ====== 家宴：移除菜品 ======
@@ -5817,7 +5954,7 @@ function loadFeastRecord(id) {
   var found = records.find(function(r) { return r.id === id; });
   if (!found) { showToast('记录不存在'); return; }
 
-  feastDishes = found.dishes || { '热菜':[],'凉菜':[],'素菜':[],'汤菜':[],'小吃':[] };
+  feastDishes = found.dishes || getFeastDishes();
   feastTitle = found.title || '家 宴';
   feastTemplate = found.template || 0;
   saveFeastDishes();
@@ -5837,6 +5974,157 @@ function deleteFeastRecord(id) {
   localStorage.setItem('caipu_feast_records', JSON.stringify(records));
   showToast('已删除', 'success');
   showFeastHistory(); // 刷新列表
+}
+
+// ====== 家宴设置面板 ======
+function showFeastSettings() {
+  var cats = loadCategories();
+  if (!cats || !cats.length) { showToast('分类数据为空，请刷新页面', 'error'); return; }
+  var html = '<div style="padding:8px var(--page-px) 20px"><h3 style="font-family:var(--font-title);font-size:18px;font-weight:700;margin-bottom:16px;text-align:center">⚙️ 家宴设置</h3>';
+
+  // 大类：拖动排序 + 点击显隐
+  var feastNames = getFeastCats();
+  html += '<div style="margin-bottom:16px"><label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">📋 排序 & 显隐（拖动⋮⋮排序，点击切换显隐）</label>';
+  html += '<div id="cat-sort-list">';
+  cats.forEach(function(c, i) {
+    var visible = feastNames.indexOf(c.name) >= 0;
+    html += '<div draggable="true" data-catidx="' + i + '" class="cat-sort-item" style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:4px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid ' + (visible?'var(--c-primary)':'var(--c-border)') + ';cursor:grab;transition:all 0.15s;opacity:' + (visible?'1':'0.5') + ';user-select:none">';
+    html += '<span style="font-size:12px;color:var(--c-text-light);cursor:grab" onclick="event.stopPropagation()">⋮⋮</span>';
+    html += '<span style="font-size:16px">' + c.emoji + '</span><span style="flex:1;font-size:14px;font-weight:500">' + c.name + '</span>';
+    html += '<span onclick="event.stopPropagation();toggleCatInFeast(\'' + c.name + '\')" style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:var(--radius-full);cursor:pointer;' + (visible?'background:var(--c-secondary);color:#fff':'background:var(--c-warm);color:var(--c-text-secondary)') + '">' + (visible?'显示':'隐藏') + '</span>';
+    html += '</div>';
+  });
+  html += '</div></div>';
+
+  // 标题显隐
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--c-border)">';
+  html += '<span style="font-size:14px">📝 显示标题</span>';
+  html += '<button onclick="toggleFeastSetting(\'showTitle\')" style="padding:6px 16px;border-radius:var(--radius-full);font-size:13px;font-weight:600;cursor:pointer;' + (feastShowTitle?'background:var(--c-secondary);color:#fff':'background:var(--c-warm);color:var(--c-text-secondary)') + ';border:none" id="btn-show-title">' + (feastShowTitle?'显示':'隐藏') + '</button>';
+  html += '</div>';
+
+  // 日期显隐
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--c-border)">';
+  html += '<span style="font-size:14px">📅 显示日期</span>';
+  html += '<button onclick="toggleFeastSetting(\'showDate\')" style="padding:6px 16px;border-radius:var(--radius-full);font-size:13px;font-weight:600;cursor:pointer;' + (feastShowDate?'background:var(--c-secondary);color:#fff':'background:var(--c-warm);color:var(--c-text-secondary)') + ';border:none" id="btn-show-date">' + (feastShowDate?'显示':'隐藏') + '</button>';
+  html += '</div>';
+
+  // 底部文字显隐 + 内容编辑
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--c-border)">';
+  html += '<span style="font-size:14px">🏷️ 底部文字</span>';
+  html += '<button onclick="toggleFeastSetting(\'showFooter\')" style="padding:6px 16px;border-radius:var(--radius-full);font-size:13px;font-weight:600;cursor:pointer;' + (feastShowFooter?'background:var(--c-secondary);color:#fff':'background:var(--c-warm);color:var(--c-text-secondary)') + ';border:none" id="btn-show-footer">' + (feastShowFooter?'显示':'隐藏') + '</button>';
+  html += '</div>';
+  html += '<div id="feast-footer-edit"' + (feastShowFooter?'':' style="display:none"') + '>';
+  html += '<div style="padding:8px 0 10px;border-bottom:1px solid var(--c-border)">';
+  html += '<input class="form-input" id="feast-footer-input" value="' + feastFooterText.replace(/"/g,'&quot;') + '" placeholder="家庭私厨 · 家的味道">';
+  html += '<button onclick="saveFeastFooter()" style="margin-top:6px;padding:6px 16px;background:var(--c-primary);color:#fff;border-radius:var(--radius-md);font-size:12px;cursor:pointer;border:none">保存</button>';
+  html += '</div></div>';
+
+  html += '<button onclick="closeModalSheet()" style="width:100%;padding:12px;background:var(--c-warm);border-radius:var(--radius-lg);font-size:14px;font-weight:600;margin-top:10px">关闭</button></div>';
+  openModalSheet(html);
+  // 绑定拖拽排序
+  setTimeout(function(){
+    var items=document.querySelectorAll('.cat-sort-item'), dragIdx=-1;
+    items.forEach(function(item){
+      item.addEventListener('dragstart',function(e){dragIdx=parseInt(this.dataset.catidx);this.style.opacity='0.4'});
+      item.addEventListener('dragend',function(e){this.style.opacity='1';items.forEach(function(el){el.style.borderTop=''});});
+      item.addEventListener('dragover',function(e){e.preventDefault();this.style.borderTop='2px solid var(--c-primary)'});
+      item.addEventListener('dragleave',function(e){this.style.borderTop=''});
+      item.addEventListener('drop',function(e){
+        e.preventDefault();this.style.borderTop='';
+        var toIdx=parseInt(this.dataset.catidx);
+        if(dragIdx>=0&&dragIdx!==toIdx){
+          var cs=loadCategories();var moved=cs.splice(dragIdx,1)[0];cs.splice(toIdx,0,moved);
+          saveCategories(cs);renderCatBar();renderFeastEditor();
+        }
+      });
+    });
+  },300);
+}
+
+function toggleCatInFeast(catName) {
+  var feastNames = getFeastCats();
+  if (feastNames.indexOf(catName) >= 0) { hideCatFromFeast(catName); }
+  else { showCatInFeast(catName); }
+  renderFeastEditor();
+  // 直接更新当前item，不重建弹窗
+  var items = document.querySelectorAll('.cat-sort-item');
+  items.forEach(function(item) {
+    var span = item.querySelector('span:last-child');
+    var nameEl = item.querySelector('span:nth-child(3)');
+    if (nameEl && nameEl.textContent.trim() === catName) {
+      var nowVisible = getFeastCats().indexOf(catName) >= 0;
+      item.style.opacity = nowVisible ? '1' : '0.5';
+      item.style.borderColor = nowVisible ? 'var(--c-primary)' : 'var(--c-border)';
+      if (span) {
+        span.textContent = nowVisible ? '显示' : '隐藏';
+        span.style.background = nowVisible ? 'var(--c-secondary)' : 'var(--c-warm)';
+        span.style.color = nowVisible ? '#fff' : 'var(--c-text-secondary)';
+      }
+    }
+  });
+}
+
+function toggleFeastSetting(key) {
+  if (key === 'showTitle') { feastShowTitle = !feastShowTitle; localStorage.setItem('caipu_feast_showTitle', feastShowTitle?'1':'0'); }
+  if (key === 'showDate') { feastShowDate = !feastShowDate; localStorage.setItem('caipu_feast_showDate', feastShowDate?'1':'0'); }
+  if (key === 'showFooter') {
+    feastShowFooter = !feastShowFooter; localStorage.setItem('caipu_feast_showFooter', feastShowFooter?'1':'0');
+    var editEl = document.getElementById('feast-footer-edit');
+    if (editEl) editEl.style.display = feastShowFooter ? '' : 'none';
+  }
+  // 直接更新按钮文字，不重建弹窗
+  var btnMap = { showTitle:'btn-show-title', showDate:'btn-show-date', showFooter:'btn-show-footer' };
+  var btn = document.getElementById(btnMap[key]);
+  if (btn) {
+    var val = key==='showTitle'?feastShowTitle:key==='showDate'?feastShowDate:feastShowFooter;
+    btn.textContent = val ? '显示' : '隐藏';
+    btn.style.background = val ? 'var(--c-secondary)' : 'var(--c-warm)';
+    btn.style.color = val ? '#fff' : 'var(--c-text-secondary)';
+  }
+  renderFeastEditor();
+}
+
+function saveFeastFooter() {
+  var v = document.getElementById('feast-footer-input').value.trim();
+  if (v) { feastFooterText = v; localStorage.setItem('caipu_feast_footer', v); renderFeastEditor(); }
+}
+
+function refreshCatSortList() {
+  var list = document.getElementById('cat-sort-list');
+  if (!list) return;
+  var cs = loadCategories();
+  var html = '';
+  cs.forEach(function(c, i) {
+    html += '<div draggable="true" data-catidx="' + i + '" class="cat-sort-item" style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:4px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);cursor:grab;transition:all 0.15s;user-select:none">';
+    html += '<span style="font-size:12px;color:var(--c-text-light);cursor:grab">⋮⋮</span>';
+    html += '<span style="font-size:16px">' + c.emoji + '</span><span style="flex:1;font-size:14px;font-weight:500">' + c.name + '</span>';
+    html += '<button onclick="deleteCatFromSettings(' + i + ')" style="color:var(--c-danger);padding:4px 8px;font-size:14px;background:none;border:none;cursor:pointer">✕</button>';
+    html += '</div>';
+  });
+  list.innerHTML = html;
+}
+
+function addCatFromSettings() {
+  var n = document.getElementById('feast-new-cat').value.trim();
+  if (!n) { showToast('请输入名称', 'warn'); return; }
+  var cs = loadCategories();
+  cs.push({name: n, emoji: '📦'});
+  saveCategories(cs);
+  renderCatBar(); renderFeastEditor();
+  refreshCatSortList();
+  document.getElementById('feast-new-cat').value = '';
+}
+function deleteCatFromSettings(i) {
+  // 从家宴中隐藏，不删源数据
+  var cs = loadCategories();
+  var catName = cs[i].name;
+  hideCatFromFeast(catName);
+  renderCatBar(); renderFeastEditor();
+  refreshCatSortList();
+}
+function addCatToFeast(catName) {
+  showCatInFeast(catName);
+  renderCatBar(); renderFeastEditor(); showFeastSettings();
 }
 
 // ====== 家宴：更换模板 ======
@@ -5879,82 +6167,122 @@ function exportFeastImage() {
   ctx.fillRect(0, 0, 750, 1334);
 
   function renderPreview(bgImg) {
+    var W = 750, H = 1334, CX = W/2;
+
+    // 背景：模拟全屏毛玻璃效果（深色柔光）
     if (bgImg) {
-      ctx.drawImage(bgImg, 0, 0, 750, 400);
-      // 模糊图层（如果有模糊值）
-      if (feastBannerBlur > 0) {
-        ctx.filter = 'blur(' + (feastBannerBlur * 2) + 'px)';
-        ctx.drawImage(bgImg, -20, -20, 790, 440);
-        ctx.filter = 'none';
-      }
+      ctx.drawImage(bgImg, 0, 0, W, H);
+      if (feastBannerBlur > 0) { ctx.filter = 'blur(' + (feastBannerBlur * 5) + 'px)'; ctx.drawImage(bgImg, -80, -80, W + 160, H + 160); ctx.filter = 'none'; }
+      var ov = ctx.createLinearGradient(0, 0, 0, H);
+      ov.addColorStop(0, 'rgba(50,20,15,0.50)'); ov.addColorStop(0.4, 'rgba(50,20,15,0.20)'); ov.addColorStop(1, 'rgba(25,10,8,0.60)');
+      ctx.fillStyle = ov; ctx.fillRect(0, 0, W, H);
+    } else {
+      var g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, '#8B2D25'); g.addColorStop(0.35, '#B5453A'); g.addColorStop(0.7, '#C9A070'); g.addColorStop(1, '#F5F0E8');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     }
 
-    // 标题
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 48px "Noto Serif SC", "Songti SC", serif';
-    ctx.textAlign = 'center';
-    ctx.shadowColor = 'rgba(0,0,0,0.2)';
-    ctx.shadowBlur = 8;
-    ctx.fillText(feastTitle, 375, 100);
-    ctx.shadowBlur = 0;
+    // === 白色卡片（复刻编辑区）===
+    var cardX = 50, cardY = 110, cardW = W - 100, cardH = H - 180, cardR = 26;
+    ctx.fillStyle = 'rgba(255,254,250,0.93)';
+    ctx.shadowColor = 'rgba(44,36,22,0.14)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 10;
+    roundRect(ctx, cardX, cardY, cardW, cardH, cardR); ctx.fill();
+    ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    ctx.strokeStyle = 'rgba(201,169,110,0.20)'; ctx.lineWidth = 1.2;
+    roundRect(ctx, cardX, cardY, cardW, cardH, cardR); ctx.stroke();
 
-    // 日期
-    var now = new Date();
-    ctx.font = '20px "Noto Sans SC", "PingFang SC", sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.fillText(now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日', 375, 140);
+    // === 标题区（跟随显隐设置）===
+    var topY = cardY + 36;
+    var divY = topY;
 
-    // 半透明内容区
-    ctx.fillStyle = 'rgba(255,255,255,0.90)';
-    roundRect(ctx, 40, 180, 670, 1080, 20);
-    ctx.fill();
+    if (feastShowTitle) {
+      ctx.strokeStyle = '#C9A96E';
+      ctx.lineWidth = 1; ctx.globalAlpha = 0.5;
+      ctx.beginPath(); ctx.moveTo(CX - 60, topY); ctx.lineTo(CX - 10, topY); ctx.stroke();
+      ctx.globalAlpha = 0.2;
+      ctx.beginPath(); ctx.moveTo(CX + 10, topY); ctx.lineTo(CX + 60, topY); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#C9A96E'; drawDiamond(ctx, CX, topY, 5);
 
-    // 分类菜品（两列布局）
-    var y = 240;
-    ['热菜', '凉菜', '素菜', '汤菜', '小吃'].forEach(function(cat) {
-      var dishes = feastDishes[cat] || [];
-      ctx.fillStyle = '#B5453A';
-      ctx.font = 'bold 26px "Noto Serif SC", "Songti SC", serif';
+      ctx.fillStyle = '#8B2D25';
+      ctx.font = '700 34px "Noto Serif SC", "Songti SC", serif';
       ctx.textAlign = 'center';
-      ctx.fillText('✦  ' + cat + '  ✦', 375, y);
-      y += 46;
+      ctx.fillText(feastTitle, CX, topY + 28);
+      divY = topY + 30;
+    }
 
+    if (feastShowDate) {
+      var now = new Date();
+      ctx.fillStyle = '#B0A590'; ctx.font = '12px "Noto Sans SC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日', CX, divY + 24);
+      divY = divY + 26;
+    }
+
+    if (feastShowTitle || feastShowDate) {
+      divY += 18;
+      ctx.fillStyle = 'rgba(201,169,110,0.40)'; ctx.fillRect(CX - 22, divY, 44, 1.5);
+    }
+    divY += 24;
+
+    // === 菜品区 ===
+    var y = divY;
+    var cats = getFeastCats();
+
+    cats.forEach(function(cat, ci) {
+      var dishes = feastDishes[cat] || [];
+      // ◆ 标题 ◆
+      ctx.fillStyle = '#C9A96E'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('◆', CX - 60, y + 2);
+      ctx.fillStyle = '#8B2D25';
+      ctx.font = '700 18px "Noto Serif SC", "Songti SC", serif';
+      ctx.fillText(cat, CX, y + 2);
+      ctx.fillStyle = '#C9A96E'; ctx.font = '9px sans-serif';
+      ctx.fillText('◆', CX + 60, y + 2);
+      y += 28;
+
+      // 菜品
       if (dishes.length) {
         for (var i = 0; i < dishes.length; i += 2) {
-          var left = dishes[i];
-          var right = dishes[i + 1];
-          ctx.fillStyle = '#2C2416';
-          ctx.font = '20px "Noto Sans SC", "PingFang SC", sans-serif';
-          if (left && right) {
-            ctx.fillText(left.name, 200, y);
-            ctx.fillText(right.name, 550, y);
-          } else if (left) {
-            ctx.fillText(left.name, 375, y);
-          }
-          y += 34;
+          ctx.fillStyle = '#3D2C2E'; ctx.font = '16px "Noto Sans SC", "PingFang SC", sans-serif';
+          ctx.textAlign = 'center';
+          var L = dishes[i], R = dishes[i+1];
+          if (L && R) { ctx.fillText(L.name, CX - 90, y + 4); ctx.fillText(R.name, CX + 90, y + 4); }
+          else if (L) { ctx.fillText(L.name, CX, y + 4); }
+          y += 26;
         }
       } else {
-        ctx.fillStyle = '#C0B8A8';
-        ctx.font = '19px "Noto Sans SC", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('（暂未添加）', 375, y);
-        y += 34;
+        ctx.fillStyle = '#C0B5A5'; ctx.font = 'italic 14px "Noto Serif SC", serif';
+        ctx.fillText('—  暂未添加  —', CX, y + 2);
+        y += 26;
       }
-      y += 20;
+
+      // 虚线分割
+      if (ci < cats.length - 1) {
+        y += 8;
+        ctx.setLineDash([4, 8]); ctx.strokeStyle = 'rgba(201,169,110,0.20)'; ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.moveTo(cardX + 40, y); ctx.lineTo(cardX + cardW - 40, y); ctx.stroke();
+        ctx.setLineDash([]);
+        y += 16;
+      }
     });
 
-    // 底部
-    ctx.fillStyle = '#C9A96E';
-    ctx.font = 'italic 18px "Noto Serif SC", serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('— 家庭私厨 · 家的味道 —', 375, 1300);
+    // === 底部 ===
+    if (feastShowFooter) {
+      var footY = cardY + cardH - 36;
+      ctx.fillStyle = 'rgba(201,169,110,0.30)'; ctx.fillRect(CX - 28, footY, 56, 1);
+      ctx.fillStyle = '#C9A96E';
+      ctx.font = 'italic 13px "Noto Serif SC", "Songti SC", serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('—  ' + feastFooterText + '  —', CX, footY + 18);
+    }
 
     // 显示预览
     var dataUrl = canvas.toDataURL('image/png');
     var html = '<div style="text-align:center;padding:8px var(--page-px) 20px">';
     html += '<h3 style="font-family:var(--font-title);font-size:20px;font-weight:700;margin-bottom:16px">📸 家宴预览</h3>';
     html += '<div style="background:var(--c-warm);border-radius:var(--radius-md);padding:8px;display:inline-block;max-width:100%">';
-    html += '<img src="' + dataUrl + '" style="width:100%;max-width:300px;border-radius:var(--radius-sm);box-shadow:var(--shadow-lg)" id="feast-preview-img">';
+    html += '<img src="' + dataUrl + '" style="width:100%;max-width:360px;border-radius:16px;box-shadow:var(--shadow-lg)" id="feast-preview-img">';
     html += '</div>';
     html += '<div style="margin-top:16px;display:flex;gap:8px">';
     html += '<button onclick="closeModalSheet()" style="flex:1;padding:12px;background:var(--c-warm);border-radius:var(--radius-lg);font-size:14px;font-weight:600">取消</button>';
@@ -5988,6 +6316,16 @@ function saveFeastImage() {
   document.body.removeChild(a);
   closeModalSheet();
   showToast('家宴图片已保存', 'success');
+}
+
+function drawDiamond(ctx, x, y, size) {
+  ctx.beginPath();
+  ctx.moveTo(x, y - size);
+  ctx.lineTo(x + size, y);
+  ctx.lineTo(x, y + size);
+  ctx.lineTo(x - size, y);
+  ctx.closePath();
+  ctx.fill();
 }
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -6614,7 +6952,6 @@ function openModalSheet(html) {
   overlay.className = 'modal-sheet-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:260;max-width:480px;margin:0 auto;display:flex;align-items:flex-end;background:rgba(44,36,22,0.30);backdrop-filter:blur(4px)';
   overlay.innerHTML = '<div class="modal-sheet-dynamic" style="width:100%;max-height:85vh;background:var(--c-surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0;overflow-y:auto;animation:slideUp 0.3s var(--ease-out)">' + html + '</div>';
-  overlay.addEventListener('click', function(e) { if (e.target === overlay) closeModalSheet(); });
   document.body.appendChild(overlay);
 }
 function closeModalSheet() {
