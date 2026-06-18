@@ -1895,15 +1895,13 @@ img { max-width: 100%; display: block; }
       <!-- 家宴编辑区：精致菜单风格 -->
       <div style="margin:20px var(--page-px);background:rgba(255,254,250,0.90);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:24px;padding:30px 24px 20px;box-shadow:0 8px 32px rgba(44,36,22,0.10),0 2px 8px rgba(44,36,22,0.06);border:1px solid rgba(201,169,110,0.18);text-align:center">
 
-        <!-- 装饰顶线 -->
-        <div id="feast-deco-top" style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:6px">
-          <div style="width:36px;height:1px;background:linear-gradient(to right,transparent,var(--c-accent))"></div>
-          <span style="color:var(--c-accent);font-size:7px">◆</span>
-          <div style="width:36px;height:1px;background:linear-gradient(to left,transparent,var(--c-accent))"></div>
+        <!-- 标题（左右装饰线） -->
+        <!-- 标题（左右装饰线） -->
+        <div id="feast-deco-top" style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:4px">
+          <span style="flex-shrink:0;width:44px;height:1.5px;background:linear-gradient(to right,transparent,#C9A96E)"></span>
+          <div id="feast-title" contenteditable="true" onblur="saveFeastTitle()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" style="font-family:var(--font-title);font-size:32px;font-weight:700;color:var(--c-primary-deep);letter-spacing:6px;outline:none;cursor:text;border-bottom:2px dashed transparent;transition:border-color 0.2s" onfocus="this.style.borderBottomColor='#C9A96E'" onblur="this.style.borderBottomColor='transparent';saveFeastTitle()">家 宴</div>
+          <span style="flex-shrink:0;width:44px;height:1.5px;background:linear-gradient(to left,transparent,#C9A96E)"></span>
         </div>
-
-        <!-- 标题（可点编辑） -->
-        <div id="feast-title" contenteditable="true" onblur="saveFeastTitle()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}" style="font-family:var(--font-title);font-size:32px;font-weight:700;color:var(--c-primary-deep);margin-bottom:2px;letter-spacing:6px;outline:none;cursor:text;min-width:60px;display:inline-block;border-bottom:2px dashed transparent;transition:border-color 0.2s" onfocus="this.style.borderBottomColor='var(--c-accent)'" onblur="this.style.borderBottomColor='transparent';saveFeastTitle()">家 宴</div>
         <div style="font-size:11px;color:var(--c-text-light);margin-bottom:16px;letter-spacing:2px" id="feast-date-label"></div>
 
         <!-- 分割线 -->
@@ -2183,13 +2181,7 @@ img { max-width: 100%; display: block; }
         </div>
         <div class="form-group">
           <label class="form-label">分类</label>
-          <div class="flavor-tags" id="form-category">
-            <span class="flavor-tag" data-val="热菜">🍳 热菜</span>
-            <span class="flavor-tag" data-val="凉菜">🥗 凉菜</span>
-            <span class="flavor-tag" data-val="素菜">🥬 素菜</span>
-            <span class="flavor-tag" data-val="小吃">🥟 小吃</span>
-            <span class="flavor-tag" data-val="汤类">🥣 汤类</span>
-            <span class="flavor-tag" data-val="饮品">🍹 饮品</span>
+          <div class="flavor-tags" id="form-category"></div>
           </div>
         </div>
         <div class="form-group">
@@ -2358,7 +2350,7 @@ function showCatManager() {
     html += '<span style="font-size:12px;color:var(--c-text-light);cursor:grab;width:16px;text-align:center;flex-shrink:0">⋮⋮</span>';
     html += '<span class="cat-mgr-emoji" style="font-size:18px;cursor:pointer;width:28px;text-align:center;flex-shrink:0" data-idx="' + i + '">' + c.emoji + '</span>';
     html += '<span class="cat-mgr-name" style="flex:1;font-size:14px;font-weight:500;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" data-idx="' + i + '">' + c.name + '</span>';
-    html += '<button class="cat-mgr-del" data-idx="' + i + '" style="color:var(--c-danger);padding:4px 6px;font-size:16px;background:none;border:none;cursor:pointer;flex-shrink:0;width:28px;text-align:center">✕</button>';
+    html += '<button class="cat-mgr-del" data-catname="' + c.name.replace(/"/g,'&quot;') + '" style="color:var(--c-danger);padding:4px 6px;font-size:16px;background:none;border:none;cursor:pointer;flex-shrink:0;width:28px;text-align:center">✕</button>';
     html += '</div>';
   });
   html += '</div>';
@@ -2375,18 +2367,43 @@ function showCatManager() {
   setTimeout(function(){ bindCatMgrEvents(); },300);
 }
 
+function pickCatEmoji(idx, em) {
+  var cs = loadCategories();
+  cs[idx].emoji = em;
+  saveCategories(cs);
+  renderCatBar(); renderFeastEditor();
+  var el = document.querySelector('.cat-mgr-emoji[data-idx="' + idx + '"]');
+  if (el) el.textContent = em;
+  closeModalSheet();
+}
+
 function bindCatMgrEvents() {
     // 改名
     document.querySelectorAll('.cat-mgr-name').forEach(function(el){ el.onclick=function(e){ e.stopPropagation();
       var n=prompt('改名:',this.textContent); if(n&&n.trim()){ var cs=loadCategories(); cs[parseInt(this.dataset.idx)].name=n.trim(); saveCategories(cs); renderCatBar(); renderFeastEditor(); this.textContent=n.trim(); }
     };});
-    // 改emoji
-    document.querySelectorAll('.cat-mgr-emoji').forEach(function(el){ el.onclick=function(e){ e.stopPropagation();
-      var v=prompt('新emoji:',this.textContent); if(v){ var cs=loadCategories(); cs[parseInt(this.dataset.idx)].emoji=v; saveCategories(cs); renderCatBar(); renderFeastEditor(); this.textContent=v; }
-    };});
-    // 删除
+    // emoji选择器（独立函数，新增项复用）
+    function bindEmojiPicker(el) {
+      el.onclick=function(e){ e.stopPropagation();
+      var idx=this.dataset.idx;
+      var FOOD_EMOJIS='🍳🥩🍗🍖🦴🌭🍔🍟🍕🫓🥪🥙🧆🌮🌯🫔🥗🥘🍲🍜🍝🥟🍤🍣🍱🍛🍚🍙🍘🥮🍢🍡🍧🍨🍦🥧🍰🎂🍪🍩🍿🥜🫘🥫🫕☕🍵🧃🥤🧊🍶🍺🍻🥂🍷🥃🍸🍹🧉🔪🥄🍴🥢🧂🌶️🥬🥒🥑🍅🧄🧅🥕🌽🥔🍠🫒🥦🥥🍄🥝🍓🍒🍑🍊🍋🍉🍇🍌🍍🥭🍎🍐';
+      var h='<div style="padding:8px var(--page-px) 20px"><h3 style="font-family:var(--font-title);font-size:16px;text-align:center;margin-bottom:12px">😊 选择图标</h3>';
+      h+='<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-height:40vh;overflow-y:auto">';
+      var emojis=[...FOOD_EMOJIS];
+      emojis.forEach(function(em){
+        h+='<span onclick="pickCatEmoji('+idx+',\''+em+'\')" style="font-size:24px;padding:6px;cursor:pointer;border-radius:8px;transition:all 0.15s">'+em+'</span>';
+      });
+      h+='</div><button onclick="closeModalSheet()" style="width:100%;padding:10px;background:var(--c-warm);border-radius:var(--radius-md);font-size:13px;margin-top:10px">关闭</button></div>';
+      openModalSheet(h,true);
+    };}
+    document.querySelectorAll('.cat-mgr-emoji').forEach(function(el){ bindEmojiPicker(el); });
+    // 删除（从DOM读名称，最可靠）
     document.querySelectorAll('.cat-mgr-del').forEach(function(el){ el.onclick=function(e){ e.stopPropagation();
-      var i=parseInt(this.dataset.idx); var cs=loadCategories(); cs.splice(i,1); saveCategories(cs); renderCatBar(); renderFeastEditor(); this.parentElement.remove();
+      var row=this.parentElement;
+      var nameEl=row.querySelector('.cat-mgr-name');
+      var name=nameEl ? nameEl.textContent.trim() : '';
+      if(!name) return;
+      var cs=loadCategories(); cs=cs.filter(function(c){return c.name!==name;}); saveCategories(cs); renderCatBar(); renderFeastEditor(); row.remove();
     };});
     // 添加
     document.getElementById('btn-add-cat').onclick=function(){
@@ -2398,15 +2415,19 @@ function bindCatMgrEvents() {
       var i=cs.length-1;
       var div=document.createElement('div'); div.className='cat-mgr-item'; div.draggable=true; div.dataset.mgridx=i;
       div.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:4px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);cursor:grab;user-select:none;box-sizing:border-box;width:100%';
-      div.innerHTML='<span style="font-size:12px;color:var(--c-text-light);cursor:grab;width:16px;text-align:center;flex-shrink:0">⋮⋮</span><span class="cat-mgr-emoji" style="font-size:18px;cursor:pointer;width:28px;text-align:center;flex-shrink:0" data-idx="'+i+'">📦</span><span class="cat-mgr-name" style="flex:1;font-size:14px;font-weight:500;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" data-idx="'+i+'">'+n+'</span><button class="cat-mgr-del" data-idx="'+i+'" style="color:var(--c-danger);padding:4px 6px;font-size:16px;background:none;border:none;cursor:pointer;flex-shrink:0;width:28px;text-align:center">✕</button>';
+      div.innerHTML='<span style="font-size:12px;color:var(--c-text-light);cursor:grab;width:16px;text-align:center;flex-shrink:0">⋮⋮</span><span class="cat-mgr-emoji" style="font-size:18px;cursor:pointer;width:28px;text-align:center;flex-shrink:0" data-idx="'+i+'">📦</span><span class="cat-mgr-name" style="flex:1;font-size:14px;font-weight:500;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" data-idx="'+i+'">'+n+'</span><button class="cat-mgr-del" data-catname="'+n.replace(/"/g,'&quot;')+'" style="color:var(--c-danger);padding:4px 6px;font-size:16px;background:none;border:none;cursor:pointer;flex-shrink:0;width:28px;text-align:center">✕</button>';
       list.appendChild(div);
+      // 为新元素绑定事件
+      var eEmoji=div.querySelector('.cat-mgr-emoji'); if(eEmoji) bindEmojiPicker(eEmoji);
+      var eName=div.querySelector('.cat-mgr-name'); if(eName) eName.onclick=function(ev){ev.stopPropagation();var nx=prompt('改名:',this.textContent);if(nx&&nx.trim()){var cs=loadCategories();var idx=parseInt(this.dataset.idx);cs[idx].name=nx.trim();saveCategories(cs);renderCatBar();renderFeastEditor();this.textContent=nx.trim();}};
+      var eDel=div.querySelector('.cat-mgr-del'); if(eDel) eDel.onclick=function(ev){ev.stopPropagation();var row=this.parentElement;var nm=row.querySelector('.cat-mgr-name');var name=nm?nm.textContent.trim():'';if(!name)return;var cs=loadCategories();cs=cs.filter(function(c){return c.name!==name;});saveCategories(cs);renderCatBar();renderFeastEditor();row.remove();};
     };
     // 恢复默认
     document.getElementById('btn-reset-cats').onclick=function(){
       if(!confirm('恢复默认分类？')) return;
       localStorage.removeItem('caipu_categories'); renderCatBar(); renderFeastEditor();
       document.getElementById('cat-mgr-list').innerHTML = loadCategories().map(function(c,i){
-        return '<div draggable="true" data-mgridx="'+i+'" class="cat-mgr-item" style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:4px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);cursor:grab;user-select:none;box-sizing:border-box;width:100%"><span style="font-size:12px;color:var(--c-text-light);cursor:grab;width:16px;text-align:center;flex-shrink:0">⋮⋮</span><span class="cat-mgr-emoji" style="font-size:18px;cursor:pointer;width:28px;text-align:center;flex-shrink:0" data-idx="'+i+'">'+c.emoji+'</span><span class="cat-mgr-name" style="flex:1;font-size:14px;font-weight:500;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" data-idx="'+i+'">'+c.name+'</span><button class="cat-mgr-del" data-idx="'+i+'" style="color:var(--c-danger);padding:4px 6px;font-size:16px;background:none;border:none;cursor:pointer;flex-shrink:0;width:28px;text-align:center">✕</button></div>';
+        return '<div draggable="true" data-mgridx="'+i+'" class="cat-mgr-item" style="display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:4px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);cursor:grab;user-select:none;box-sizing:border-box;width:100%"><span style="font-size:12px;color:var(--c-text-light);cursor:grab;width:16px;text-align:center;flex-shrink:0">⋮⋮</span><span class="cat-mgr-emoji" style="font-size:18px;cursor:pointer;width:28px;text-align:center;flex-shrink:0" data-idx="'+i+'">'+c.emoji+'</span><span class="cat-mgr-name" style="flex:1;font-size:14px;font-weight:500;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" data-idx="'+i+'">'+c.name+'</span><button class="cat-mgr-del" data-catname="'+c.name.replace(/"/g,'&quot;')+'" style="color:var(--c-danger);padding:4px 6px;font-size:16px;background:none;border:none;cursor:pointer;flex-shrink:0;width:28px;text-align:center">✕</button></div>';
       }).join('');
     };
     // 拖拽排序
@@ -2968,6 +2989,25 @@ let editingRecipeId = null;
 let formServings = 4;
 let formFlavors = [];
 let formCategory = '';
+
+function renderFormCategories() {
+  var cats = loadCategories();
+  var el = document.getElementById('form-category');
+  if (!el) return;
+  var h = '';
+  cats.forEach(function(c){
+    var sel = formCategory === c.name ? ' selected' : '';
+    h += '<span class="flavor-tag' + sel + '" data-val="' + c.name + '">' + c.emoji + ' ' + c.name + '</span>';
+  });
+  el.innerHTML = h;
+  // 绑定点击事件
+  el.querySelectorAll('.flavor-tag').forEach(function(tag){
+    tag.addEventListener('click', function(){
+      formCategory = formCategory === tag.dataset.val ? '' : tag.dataset.val;
+      el.querySelectorAll('.flavor-tag').forEach(function(t){ t.classList.toggle('selected', t.dataset.val === formCategory); });
+    });
+  });
+}
 let formDifficulty = '3';  // 1-5 星
 let formMeatType = 'mix';
 let formSteps = [];
@@ -3008,6 +3048,7 @@ function openRecipeEditor(recipe) {
   // 精细字段
   formFlavors = recipe && recipe.flavor_tags ? (typeof recipe.flavor_tags === 'string' ? JSON.parse(recipe.flavor_tags) : recipe.flavor_tags) : [];
   formCategory = recipe ? (recipe.category || '') : '';
+  renderFormCategories();
   formDifficulty = recipe ? (recipe.difficulty || '3') : '3';
   refreshDifficultyTag();
   formMeatType = recipe ? (recipe.meat_type || 'mix') : 'mix';
@@ -3019,7 +3060,6 @@ function openRecipeEditor(recipe) {
 
   // 更新 UI
   refreshFlavorTags();
-  refreshCategoryTag();
   refreshDifficultyTag();
   refreshMeatTypeTag();
   renderAllIngredients();
@@ -3112,19 +3152,7 @@ function refreshFlavorTags() {
   });
 }
 
-// ----- 分类单选 -----
-document.querySelectorAll('#form-category .flavor-tag').forEach(tag => {
-  tag.addEventListener('click', () => {
-    formCategory = formCategory === tag.dataset.val ? '' : tag.dataset.val;
-    refreshCategoryTag();
-  });
-});
-
-function refreshCategoryTag() {
-  document.querySelectorAll('#form-category .flavor-tag').forEach(t => {
-    t.classList.toggle('selected', t.dataset.val === formCategory);
-  });
-}
+// 旧的分类单选逻辑已由 renderFormCategories() 接管
 
 // ----- 难度5星选择 -----
 function setDifficulty(val) {
@@ -6946,8 +6974,8 @@ async function saveCustomIngredient() {
 
 
 // ----- 通用底部弹窗 -----
-function openModalSheet(html) {
-  closeModalSheet(); // 先关闭旧弹窗，防止堆叠
+function openModalSheet(html, keepOpen) {
+  if (!keepOpen) closeModalSheet();
   var overlay = document.createElement('div');
   overlay.className = 'modal-sheet-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:260;max-width:480px;margin:0 auto;display:flex;align-items:flex-end;background:rgba(44,36,22,0.30);backdrop-filter:blur(4px)';
@@ -6955,7 +6983,8 @@ function openModalSheet(html) {
   document.body.appendChild(overlay);
 }
 function closeModalSheet() {
-  var el = document.querySelector('.modal-sheet-overlay');
+  var els = document.querySelectorAll('.modal-sheet-overlay');
+  var el = els[els.length - 1]; // 只关最顶层
   if (el) el.remove();
 }
 
