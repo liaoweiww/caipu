@@ -114,23 +114,33 @@ def update_recipe(recipe_id):
     body = request.get_json()
     with get_db() as conn:
         cur = conn.cursor()
-        cur.execute("SELECT id FROM recipes WHERE id = %s", (recipe_id,))
-        if not cur.fetchone():
+        cur.execute("SELECT * FROM recipes WHERE id = %s", (recipe_id,))
+        existing = cur.fetchone()
+        if not existing:
             return jsonify({"error": "菜谱不存在"}), 404
 
-        ft = body.get('flavor_tags', [])
+        # 只更新请求中实际提供的字段，未提供则保持原值
+        ft = body.get('flavor_tags', existing.get('flavor_tags'))
         flavor_tags = ft if isinstance(ft, str) else json.dumps(ft, ensure_ascii=False)
         cur.execute(
             "UPDATE recipes SET name=%s, image=%s, tenant_id=%s, status=%s, category=%s, "
             "difficulty=%s, cook_time=%s, flavor_tags=%s, meat_type=%s, servings=%s, "
             "staple_weight=%s, is_favorited=%s, is_shared=%s, notes=%s, source=%s "
             "WHERE id=%s",
-            (body.get('name'), body.get('image'), body.get('tenant_id'),
-             body.get('status', 'mastered'), body.get('category'),
-             body.get('difficulty', 'easy'), body.get('cook_time'), flavor_tags,
-             body.get('meat_type', 'mix'), body.get('servings', 4),
-             body.get('staple_weight'), body.get('is_favorited', 0),
-             body.get('is_shared', 0), body.get('notes', ''), body.get('source', ''),
+            (body.get('name', existing['name']),
+             body.get('image', existing['image']),
+             body.get('tenant_id', existing['tenant_id']),
+             body.get('status', existing['status']),
+             body.get('category', existing['category']),
+             body.get('difficulty', existing['difficulty']),
+             body.get('cook_time', existing['cook_time']), flavor_tags,
+             body.get('meat_type', existing['meat_type']),
+             body.get('servings', existing['servings']),
+             body.get('staple_weight', existing['staple_weight']),
+             body.get('is_favorited', existing['is_favorited']),
+             body.get('is_shared', existing['is_shared']),
+             body.get('notes', existing['notes']),
+             body.get('source', existing['source']),
              recipe_id)
         )
         return jsonify({"message": "更新成功"})

@@ -80,13 +80,18 @@ def update_ingredient(ingredient_id):
         row = cur.fetchone()
         if not row:
             return jsonify({"error": "食材不存在"}), 404
+
+        # 系统食材只允许更新 image，其他字段保护
         if row['is_system']:
-            return jsonify({"error": "系统食材不可修改"}), 403
+            if set(body.keys()) <= {'image'}:
+                cur.execute("UPDATE ingredients SET image=%s WHERE id=%s", (body.get('image'), ingredient_id))
+                return jsonify({"message": "图片已更新"})
+            return jsonify({"error": "系统食材仅支持更新图片"}), 403
 
         cur.execute(
-            "UPDATE ingredients SET name=%s, emoji=%s, category1=%s, category2=%s, unit=%s WHERE id=%s",
+            "UPDATE ingredients SET name=%s, emoji=%s, category1=%s, category2=%s, unit=%s, image=%s WHERE id=%s",
             (body.get('name'), body.get('emoji'), body.get('category1'),
-             body.get('category2'), body.get('unit'), ingredient_id)
+             body.get('category2'), body.get('unit'), body.get('image'), ingredient_id)
         )
         return jsonify({"message": "更新成功"})
 

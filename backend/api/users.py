@@ -53,3 +53,48 @@ def update_user(user_id):
              body.get('unit_preference', 'g'), body.get('memory_enabled', 1), user_id)
         )
         return jsonify({"message": "更新成功"})
+
+
+@users_bp.route('/<user_id>/preferences', methods=['GET'])
+def get_preferences(user_id):
+    """获取用户所有偏好数据（JSON blob）"""
+    import json
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT preferences FROM users WHERE id = %s", (user_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"error": "用户不存在"}), 404
+        prefs = row.get('preferences')
+        if isinstance(prefs, str):
+            prefs = json.loads(prefs)
+        return jsonify({"preferences": prefs or {}})
+
+
+@users_bp.route('/<user_id>/preferences', methods=['PUT'])
+def save_preferences(user_id):
+    """保存用户所有偏好数据（JSON blob，合并模式）"""
+    import json
+    body = request.get_json()
+    new_prefs = body.get('preferences', {})
+    with get_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT preferences FROM users WHERE id = %s", (user_id,))
+        row = cur.fetchone()
+        if not row:
+            # 自动创建用户
+            cur.execute(
+                "INSERT INTO users (id, nickname, preferences) VALUES (%s, %s, %s)",
+                (user_id, '家庭大厨', json.dumps(new_prefs, ensure_ascii=False))
+            )
+        else:
+            existing = row.get('preferences')
+            if isinstance(existing, str):
+                existing = json.loads(existing)
+            existing = existing or {}
+            existing.update(new_prefs)
+            cur.execute(
+                "UPDATE users SET preferences = %s WHERE id = %s",
+                (json.dumps(existing, ensure_ascii=False), user_id)
+            )
+        return jsonify({"message": "偏好已保存"})

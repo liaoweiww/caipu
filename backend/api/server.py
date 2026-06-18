@@ -2,7 +2,7 @@
 import sys, os, uuid
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from flask import Flask, jsonify, send_from_directory, request
+from flask import Flask, jsonify, send_from_directory, request, make_response
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -73,4 +73,8 @@ def serve_upload(filename):
 @app.route('/')
 def index():
     root = os.path.join(os.path.dirname(__file__), '..', '..')
-    return send_from_directory(root, 'index.html')
+    resp = make_response(send_from_directory(root, 'index.html'))
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp

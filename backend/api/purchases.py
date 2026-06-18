@@ -16,7 +16,7 @@ def list_purchases():
     end_date = request.args.get('end_date')
     location = request.args.get('location')
 
-    sql = "SELECT p.*, i.name as ingredient_name, i.emoji as ingredient_emoji FROM purchases p LEFT JOIN ingredients i ON p.ingredient_id = i.id WHERE 1=1"
+    sql = "SELECT p.*, i.name as ingredient_name, i.emoji as ingredient_emoji, i.category1, i.category2 FROM purchases p LEFT JOIN ingredients i ON p.ingredient_id = i.id WHERE 1=1"
     params = []
 
     if tenant_id:
@@ -42,14 +42,16 @@ def list_purchases():
 def create_purchase():
     body = request.get_json()
     pur_id = f"pur_{uuid.uuid4().hex[:10]}"
-    total_price = round(body.get('price', 0) * body.get('quantity', 0), 2)
+    # 优先使用前端传来的 total_price（已正确换算克/斤），否则后端算
+    qty = body.get('quantity', 1)
+    total_price = body.get('total_price') or round(body.get('price', 0) * qty / 500, 2)
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute(
             "INSERT INTO purchases (id, tenant_id, ingredient_id, price, total_price, quantity, unit, purchase_date, location, note, created_by) "
             "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
             (pur_id, body.get('tenant_id'), body['ingredient_id'], body['price'],
-             total_price, body.get('quantity', 1), body.get('unit', '斤'),
+             total_price, qty, body.get('unit', 'g'),
              body.get('purchase_date'), body.get('location', ''), body.get('note', ''),
              body.get('created_by'))
         )
@@ -59,12 +61,13 @@ def create_purchase():
 @purchases_bp.route('/<purchase_id>', methods=['PUT'])
 def update_purchase(purchase_id):
     body = request.get_json()
-    total_price = round(body.get('price', 0) * body.get('quantity', 0), 2)
+    qty = body.get('quantity', 1)
+    total_price = body.get('total_price') or round(body.get('price', 0) * qty / 500, 2)
     with get_db() as conn:
         cur = conn.cursor()
         cur.execute(
             "UPDATE purchases SET price=%s, total_price=%s, quantity=%s, unit=%s, purchase_date=%s, location=%s, note=%s WHERE id=%s",
-            (body.get('price'), total_price, body.get('quantity'), body.get('unit'),
+            (body.get('price'), total_price, qty, body.get('unit', 'g'),
              body.get('purchase_date'), body.get('location'), body.get('note'), purchase_id)
         )
         return jsonify({"message": "更新成功"})
