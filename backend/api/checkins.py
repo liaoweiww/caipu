@@ -36,9 +36,11 @@ def checkin():
             last_date = datetime.strptime(str(last['checkin_date']), '%Y-%m-%d')
             today = datetime.strptime(checkin_date, '%Y-%m-%d')
             if (today - last_date).days == 1:
-                streak = (int(cur.execute(
+                cur.execute(
                     "SELECT streak_count FROM checkins WHERE user_id=%s ORDER BY checkin_date DESC LIMIT 1",
-                    (user_id,)).fetchone() or {'streak_count': 0}) or 1) + 1
+                    (user_id,))
+                last_row = cur.fetchone()
+                streak = (last_row['streak_count'] if last_row else 0) + 1
 
         ck_id = f"ck_{uuid.uuid4().hex[:10]}"
         cur.execute(

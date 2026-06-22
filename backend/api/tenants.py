@@ -57,7 +57,7 @@ def update_tenant(tenant_id):
 
 
 @tenants_bp.route('/<tenant_id>/join', methods=['POST'])
-def join_tenant():
+def join_tenant(tenant_id):
     """通过邀请码加入"""
     body = request.get_json()
     with get_db() as conn:

@@ -1282,8 +1282,9 @@ img { max-width: 100%; display: block; }
 .cal-day:hover { background: var(--c-warm); }
 .cal-day.today { background: var(--c-primary-light); border: 2px solid var(--c-primary); font-weight: 700; }
 .cal-day.other-month { color: var(--c-text-light); }
-.cal-day.selected { background: var(--c-primary); color: #fff; font-weight: 700; }
 .cal-day.in-week { background: rgba(122,154,126,0.10); box-shadow: inset 0 0 0 2px rgba(122,154,126,0.3); border-radius: 50%; font-weight: 600; color: var(--c-text); }
+.cal-day.selected,
+.cal-day.in-week.selected { background: var(--c-primary); color: #fff; font-weight: 700; box-shadow: 0 0 0 3px rgba(181,69,58,0.3); }
 .cal-dots { display: flex; gap: 3px; margin-top: 2px; }
 .cal-dot { width: 4px; height: 4px; border-radius: 50%; }
 .cal-dot--breakfast { background: var(--c-secondary); }
@@ -1391,40 +1392,60 @@ img { max-width: 100%; display: block; }
 }
 .meal-pick-modal.show { display: flex; }
 .meal-pick-sheet {
-  width: 100%; max-height: 75vh; background: var(--c-surface);
+  width: 100%; max-height: 80vh; background: var(--c-surface);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  padding: 16px var(--page-px) calc(16px + env(safe-area-inset-bottom));
+  padding: 12px var(--page-px) calc(12px + env(safe-area-inset-bottom));
   overflow-y: auto; animation: slideUp 0.3s var(--ease-out);
 }
 .meal-pick-sheet__header {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
-.meal-pick-sheet__title { font-size: 16px; font-weight: 700; }
-.meal-pick-list { max-height: 40vh; overflow-y: auto; }
-.meal-pick-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 0; border-bottom: 1px solid var(--c-border);
-  cursor: pointer;
-}
+.meal-pick-sheet__title { font-size: 15px; font-weight: 700; }
+.meal-pick-list { max-height: none; overflow-y: visible; }
 .meal-pick-item__checkbox {
-  width: 22px; height: 22px; border-radius: 50%;
+  width: 18px; height: 18px; border-radius: 50%;
   border: 2px solid var(--c-border); display: flex;
   align-items: center; justify-content: center;
-  font-size: 12px; color: transparent; flex-shrink: 0; transition: all 0.2s;
+  font-size: 10px; color: transparent; flex-shrink: 0; transition: all 0.2s;
 }
 .meal-pick-item__checkbox.checked { background: var(--c-primary); border-color: var(--c-primary); color: #fff; }
-.meal-pick-item__emoji { font-size: 28px; }
-.meal-pick-item__info { flex: 1; }
-.meal-pick-item__name { font-size: 14px; font-weight: 600; }
-.meal-pick-item__meta { font-size: 11px; color: var(--c-text-secondary); }
+.meal-pick-item__emoji { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+.meal-pick-item__info { flex: 1; min-width: 0; }
+.meal-pick-item__name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meal-pick-item__meta { font-size: 10px; color: var(--c-text-secondary); }
 .meal-pick-actions {
-  display: flex; gap: 8px; margin-top: 14px;
+  display: flex; gap: 8px; margin-top: 10px; position: sticky; bottom: 0;
+  background: var(--c-surface); padding-top: 8px; border-top: 1px solid var(--c-border);
 }
 .meal-pick-actions button {
-  flex: 1; padding: 12px; border-radius: var(--radius-lg);
-  font-size: 14px; font-weight: 600;
+  flex: 1; padding: 10px; border-radius: var(--radius-lg);
+  font-size: 13px; font-weight: 600;
 }
+.meal-pick-cat {
+  padding: 7px 10px; margin: 8px 0 4px; font-size: 11px; font-weight: 700;
+  color: var(--c-text); border-radius: var(--radius-sm);
+  position: sticky; top: 0; z-index: 1;
+  display: flex; align-items: center; gap: 4px;
+  letter-spacing: 0.5px;
+}
+.meal-pick-cat::after {
+  content: ''; margin-left: auto;
+  font-size: 9px; font-weight: 500; opacity: 0.6;
+}
+.meal-pick-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+  padding: 0 2px;
+}
+.meal-pick-item {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 8px; margin: 0;
+  background: var(--c-surface); border-radius: var(--radius-sm);
+  cursor: pointer; transition: all 0.15s;
+  box-shadow: var(--shadow-xs);
+  border: 1px solid var(--c-border);
+}
+.meal-pick-item:active { background: var(--c-primary-light); transform: scale(0.97); }
 .btn-confirm { background: var(--c-primary); color: #fff; }
 .btn-random { background: var(--c-accent); color: #fff; }
 .btn-cancel { background: var(--c-warm); color: var(--c-text-secondary); }
@@ -1679,7 +1700,7 @@ img { max-width: 100%; display: block; }
       <!-- 月/周切换 + 操作栏 -->
       <div class="meal-topbar" style="background:transparent;padding-top:6px">
         <button onclick="switchMealView('month')" id="btn-month-view" style="background:rgba(255,255,255,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">📅 月视图</button>
-        <button onclick="switchMealView('week')" id="btn-week-view" style="background:rgba(255,255,255,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">📆 周视图</button>
+        <button onclick="openMealPicker('breakfast')" id="btn-week-view" style="background:rgba(255,255,255,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">📆 周视图</button>
         <button onclick="openShoplist()" style="background:rgba(255,255,255,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">🛒 采购清单</button>
         <button onclick="showMealMenuManager()" style="background:rgba(255,255,255,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">📋 菜单管理</button>
       </div>
@@ -1735,17 +1756,17 @@ img { max-width: 100%; display: block; }
 
     <!-- 今日餐食 -->
     <div class="today-meals" id="today-meals-cards">
-      <div class="today-meal-card" onclick="mealSelectedDate=new Date().toISOString().split('T')[0];switchMealView('week')">
+      <div class="today-meal-card" onclick="openMealPicker('breakfast')">
         <div class="today-meal-card__icon">🌅</div>
         <div class="today-meal-card__label">早餐</div>
         <div class="today-meal-card__count" id="today-breakfast-count">0道</div>
       </div>
-      <div class="today-meal-card" onclick="mealSelectedDate=new Date().toISOString().split('T')[0];switchMealView('week')">
+      <div class="today-meal-card" onclick="openMealPicker('lunch')">
         <div class="today-meal-card__icon">☀️</div>
         <div class="today-meal-card__label">午餐</div>
         <div class="today-meal-card__count" id="today-lunch-count">0道</div>
       </div>
-      <div class="today-meal-card" onclick="mealSelectedDate=new Date().toISOString().split('T')[0];switchMealView('week')">
+      <div class="today-meal-card" onclick="openMealPicker('dinner')">
         <div class="today-meal-card__icon">🌙</div>
         <div class="today-meal-card__label">晚餐</div>
         <div class="today-meal-card__count" id="today-dinner-count">0道</div>
@@ -2706,6 +2727,14 @@ async function fetchRecipes() {
     const res = await fetch(`${API_BASE}/recipes?${params}`);
     const json = await res.json();
     recipeData = json.data || [];
+    // 异步校验图片，挂了就清掉用 emoji 兜底
+    recipeData.forEach(function(r) {
+      if (r.image && (r.image.startsWith('http://') || r.image.startsWith('https://'))) {
+        var tester = new Image();
+        tester.onerror = function() { r.image = ''; renderRecipes(); };
+        tester.src = r.image;
+      }
+    });
     renderRecipes();
   } catch (e) {
     console.log('❌ API 未连接:', e.message);
@@ -2859,6 +2888,12 @@ async function openRecipeDetail(recipeId) {
   try {
     const res = await fetch(`${API_BASE}/recipes/${recipeId}`);
     const recipe = await res.json();
+    // 校验外链图片是否可访问
+    if (recipe.image && (recipe.image.startsWith('http://') || recipe.image.startsWith('https://'))) {
+      var tester = new Image();
+      tester.onerror = function() { recipe.image = ''; showDetail(recipe); };
+      tester.src = recipe.image;
+    }
     showDetail(recipe);
   } catch (e) {
     // 从本地找
@@ -4032,11 +4067,23 @@ function switchMealView(view) {
   document.getElementById('btn-month-view').style.color = view === 'month' ? '#fff' : '';
   document.getElementById('btn-week-view').style.background = view === 'week' ? 'var(--c-primary)' : '';
   document.getElementById('btn-week-view').style.color = view === 'week' ? '#fff' : '';
-  if (view === 'month') renderMonthCalendar();
+  if (view === 'month') {
+    // 切到月视图时清空周视图的三餐内容，防止残留
+    ['breakfast','lunch','dinner'].forEach(function(mt) {
+      var el = document.getElementById('meals-' + mt);
+      if (el) el.innerHTML = '';
+    });
+    renderMonthCalendar();
+  }
   if (view === 'week') renderWeekView();
 }
 
 // ----- 月日历 -----
+function onCalDayClick(ds) {
+  mealSelectedDate = ds;
+  renderDayMeals(ds);
+  renderMonthCalendar();
+}
 function renderMonthCalendar() {
   const now = new Date();
   const year = now.getFullYear();
@@ -4046,7 +4093,7 @@ function renderMonthCalendar() {
   const startDow = firstDay.getDay(); // 0=Sun
   const todayStr = now.toISOString().split('T')[0];
 
-  document.getElementById('meal-month-label').textContent = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  document.getElementById('meal-month-label').textContent = mealSelectedDate;
 
   let html = `<div class="meal-calendar__nav">
     <button onclick="mealMonthOffset--;renderMonthCalendar();loadMealPlans()">‹</button>
@@ -4075,7 +4122,7 @@ function renderMonthCalendar() {
     const b = (plans.breakfast || []).length > 0;
     const l = (plans.lunch || []).length > 0;
     const din = (plans.dinner || []).length > 0;
-    html += `<div class="cal-day${isToday ? ' today' : ''}${isSel ? ' selected' : ''}${inWeek ? ' in-week' : ''}" onclick="mealSelectedDate='${dateStr}';renderMonthCalendar();renderDayMeals()">
+    html += `<div class="cal-day${isToday ? ' today' : ''}${isSel ? ' selected' : ''}${inWeek ? ' in-week' : ''}" onclick="onCalDayClick('${dateStr}')">
       <span>${d}</span>
       <div class="cal-dots">${b ? '<span class="cal-dot cal-dot--breakfast"></span>' : ''}${l ? '<span class="cal-dot cal-dot--lunch"></span>' : ''}${din ? '<span class="cal-dot cal-dot--dinner"></span>' : ''}</div>
     </div>`;
@@ -4152,16 +4199,44 @@ function openMealPicker(mealType) {
   if (!list.length) {
     document.getElementById('meal-pick-list').innerHTML = '<div style="text-align:center;padding:20px;color:var(--c-text-light)">还没有拿手菜，先去创建吧</div>';
   } else {
-    document.getElementById('meal-pick-list').innerHTML = list.map(r => `
-      <div class="meal-pick-item" onclick="togglePickRecipe('${r.id}')">
-        <div class="meal-pick-item__checkbox" id="pick-chk-${r.id}">✓</div>
-        <span class="meal-pick-item__emoji">${r.emoji || '🍳'}</span>
-        <div class="meal-pick-item__info">
-          <div class="meal-pick-item__name">${r.name}</div>
-          <div class="meal-pick-item__meta">${getStars(r.difficulty)} · ${r.cook_time || '--'}</div>
-        </div>
-      </div>
-    `).join('');
+    // 按拿手菜自定义分类分组
+    var cats = {};
+    var catOrder = ['热菜','凉菜','素菜','小吃','汤类','饮品'];
+    var catEmoji = {'热菜':'🍳','凉菜':'🥗','素菜':'🥬','小吃':'🥟','汤类':'🥣','饮品':'🍹'};
+    var catColor = {
+      '热菜': { bg: '#FFF0ED', bar: '#E8734A' },
+      '凉菜': { bg: '#EDF5EE', bar: '#6BAF7B' },
+      '素菜': { bg: '#F0F7EB', bar: '#8CB369' },
+      '小吃': { bg: '#FFF8ED', bar: '#E8A94E' },
+      '汤类': { bg: '#FDF3E7', bar: '#C98B5F' },
+      '饮品': { bg: '#EDF3F8', bar: '#6B9AC4' }
+    };
+    catOrder.forEach(function(c) { cats[c] = []; });
+    list.forEach(function(r) {
+      var c = r.category || '其他';
+      if (!cats[c]) { cats[c] = []; catOrder.push(c); }
+      cats[c].push(r);
+    });
+    var html = '';
+    catOrder.forEach(function(c) {
+      var items = cats[c];
+      if (!items || !items.length) return;
+      var cc = catColor[c] || { bg: '#F5F3EF', bar: '#B0A590' };
+      html += '<div class="meal-pick-cat" style="border-left:3px solid ' + cc.bar + ';background:' + cc.bg + '">' + (catEmoji[c]||'📋') + ' ' + c + ' (' + items.length + ')</div>';
+      html += '<div class="meal-pick-grid">';
+      items.forEach(function(r) {
+        html += '<div class="meal-pick-item" onclick="togglePickRecipe(\'' + r.id + '\')">' +
+          '<div class="meal-pick-item__checkbox" id="pick-chk-' + r.id + '">✓</div>' +
+          '<span class="meal-pick-item__emoji">' + (r.emoji || '🍳') + '</span>' +
+          '<div class="meal-pick-item__info">' +
+            '<div class="meal-pick-item__name">' + r.name + '</div>' +
+            '<div class="meal-pick-item__meta">' + getStars(r.difficulty) + ' · ' + (r.cook_time || '--') + '</div>' +
+          '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+    });
+    document.getElementById('meal-pick-list').innerHTML = html;
   }
 
   document.getElementById('meal-pick-modal').classList.add('show');
@@ -4221,8 +4296,7 @@ async function confirmMealPick() {
     }
   }
   closeMealPicker();
-  renderWeekView();
-  renderMonthCalendar();
+  loadMealPlans(); // 从数据库刷新当月数据，自动更新月视图和周视图
 }
 
 function toggleMealDone(mealType, idx) {
@@ -4266,16 +4340,35 @@ async function clearDayMeals() {
 }
 
 // ----- 今日餐食卡片 -----
-// 月视图点日期：显示当天三餐
-function renderDayMeals() {
+// 月视图点日期：直接查数据库获取当天三餐
+// dateStr 可选，传入则用传入的日期，保证与全局 mealSelectedDate 解耦
+async function renderDayMeals(dateStr) {
+  var targetDate = dateStr || mealSelectedDate;
   var panel = document.getElementById('day-meals-panel');
   if (!panel) return;
-  var plans = mealPlansCache[mealSelectedDate] || {};
+
+  // 先显示加载中
+  panel.style.display = '';
+  // 直接从数据库查当天的菜品
+  var plans = { breakfast: [], lunch: [], dinner: [] };
+  try {
+    var res = await fetch(API_BASE + '/meal-plans?tenant_id=test_tenant&start_date=' + targetDate + '&end_date=' + targetDate);
+    (data.data || []).forEach(function(p) {
+      var mt = p.meal_type;
+      if (!plans[mt]) plans[mt] = [];
+      plans[mt].push({
+        id: p.recipe_id, name: p.recipe_name || p.recipe_id, emoji: '🍳',
+        difficulty: '3', cook_time: '', done: false
+      });
+    });
+    mealPlansCache[targetDate] = plans;
+  } catch (e) { return; }
+
   var total = (plans.breakfast||[]).length + (plans.lunch||[]).length + (plans.dinner||[]).length;
-  if (!total) { panel.style.display = 'none'; return; }
+  if (!total) { panel.style.display = 'none'; panel.innerHTML = ''; return; }
   panel.style.display = '';
   var mtLabel = {breakfast:'🌅 早餐', lunch:'☀️ 午餐', dinner:'🌙 晚餐'};
-  var html = '<div style="background:var(--c-surface);border-radius:var(--radius-md);padding:12px;box-shadow:var(--shadow-sm)"><div style="font-weight:700;font-size:13px;margin-bottom:8px">📅 ' + mealSelectedDate + ' · ' + total + '道菜</div>';
+  var html = '<div style="background:var(--c-surface);border-radius:var(--radius-md);padding:12px;box-shadow:var(--shadow-sm)"><div style="font-weight:700;font-size:13px;margin-bottom:8px">📅 ' + targetDate + ' · ' + total + '道菜</div>';
   ['breakfast','lunch','dinner'].forEach(function(mt) {
     var dishes = plans[mt] || [];
     if (!dishes.length) return;
@@ -4286,13 +4379,17 @@ function renderDayMeals() {
     });
     html += '</div></div>';
   });
-  html += '<button onclick="mealSelectedDate=mealSelectedDate;switchMealView(\'week\')" style="margin-top:6px;width:100%;padding:8px;background:var(--c-primary);color:#fff;border-radius:var(--radius-sm);font-size:12px">📝 编辑这天菜单</button></div>';
+  html += '<button onclick="mealSelectedDate=\'' + targetDate + '\';switchMealView(\'week\')" style="margin-top:6px;width:100%;padding:8px;background:var(--c-primary);color:#fff;border-radius:var(--radius-sm);font-size:12px">📝 编辑这天菜单</button></div>';
   panel.innerHTML = html;
 }
 
 function updateTodayCards() {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const plans = mealPlansCache[todayStr] || {};
+  // 改用当前选中日期，非始终今天
+  var ds = mealSelectedDate;
+  var plans = mealPlansCache[ds] || {};
+  // 更新卡片标签为选中日期
+  var labelEl = document.getElementById('today-cards-label');
+  if (labelEl) labelEl.textContent = ds;
   ['breakfast','lunch','dinner'].forEach(function(mt) {
     var dishes = plans[mt] || [];
     var el = document.getElementById('today-' + mt + '-count');
@@ -4897,6 +4994,9 @@ async function loadMealPlans() {
   const month = now.getMonth() + mealMonthOffset;
   const startDate = `${year}-${String(month + 1).padStart(2,'0')}-01`;
   const endDate = `${year}-${String(month + 1).padStart(2,'0')}-${new Date(year, month + 1, 0).getDate()}`;
+
+  // 确保月视图初始化时周视图是隐藏的
+  if (!mealViewMode || mealViewMode === 'month') switchMealView('month');
 
   try {
     const res = await fetch(`${API_BASE}/meal-plans?tenant_id=test_tenant&start_date=${startDate}&end_date=${endDate}`);

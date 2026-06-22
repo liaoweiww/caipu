@@ -99,8 +99,8 @@ def create_recipe():
             "is_favorited, is_shared, notes, source) "
             "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
             (recipe_id, body['name'], body.get('image', ''), body.get('tenant_id'),
-             body.get('owner_id', ''), body.get('status', 'mastered'),
-             body.get('category', ''), body.get('difficulty', 'easy'),
+             body.get('owner_id') or None, body.get('status', 'mastered'),
+             body.get('category', ''), body.get('difficulty', '3'),
              body.get('cook_time', ''), flavor_tags, body.get('meat_type', 'mix'),
              body.get('servings', 4), body.get('staple_weight'),
              body.get('is_favorited', 0), body.get('is_shared', 0),
