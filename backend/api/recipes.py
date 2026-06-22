@@ -152,6 +152,8 @@ def delete_recipe(recipe_id):
         cur = conn.cursor()
         cur.execute("DELETE FROM recipe_steps WHERE recipe_id = %s", (recipe_id,))
         cur.execute("DELETE FROM recipe_ingredients WHERE recipe_id = %s", (recipe_id,))
+        cur.execute("DELETE FROM meal_plans WHERE recipe_id = %s", (recipe_id,))
+        cur.execute("DELETE FROM feast_menu_dishes WHERE recipe_id = %s", (recipe_id,))
         cur.execute("DELETE FROM recipes WHERE id = %s", (recipe_id,))
         return jsonify({"message": "删除成功"})
 

@@ -112,9 +112,10 @@ def delete_ingredient(ingredient_id):
 
 @ingredients_bp.route('/prices', methods=['GET'])
 def ingredient_prices():
-    """每个食材的最新购买价格、均价和最近3次历史价格"""
+    """每个食材的最新购买价格、均价和最近3次历史价格（含参考价兜底）"""
     with get_db() as conn:
         cur = conn.cursor()
+        # 有购买记录的
         cur.execute(
             "SELECT p.ingredient_id, MAX(p.price) as latest_price, AVG(p.price) as avg_price, "
             "MAX(p.purchase_date) as last_date "
@@ -148,4 +149,19 @@ def ingredient_prices():
         for iid, recents in ing_recent.items():
             if iid in result:
                 result[iid]['recent'] = recents
+        # 没有购买记录但有参考价的食材，用参考价兜底
+        cur.execute(
+            "SELECT id, reference_price FROM ingredients "
+            "WHERE reference_price IS NOT NULL AND reference_price > 0"
+        )
+        ref_rows = cur.fetchall()
+        for row in ref_rows:
+            iid = row['id']
+            if iid not in result:
+                result[iid] = {
+                    'latest': float(row['reference_price']),
+                    'avg': float(row['reference_price']),
+                    'last_date': None,
+                    'recent': []
+                }
         return jsonify(result)
