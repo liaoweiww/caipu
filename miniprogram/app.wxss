@@ -1,0 +1,7 @@
+/* 家庭私厨 — 小程序全局样式 */
+/* web-view 方案下样式由 Web 端控制，这里保持极简 */
+
+page {
+  background: #FDFAF5;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', sans-serif;
+}

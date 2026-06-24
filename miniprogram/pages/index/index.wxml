@@ -1,0 +1,7 @@
+<!-- 家庭私厨 — 首页（web-view 承载完整 SPA） -->
+<web-view
+  src="{{webUrl}}"
+  bindload="onWebLoad"
+  binderror="onWebError"
+  bindmessage="onMessage"
+/>

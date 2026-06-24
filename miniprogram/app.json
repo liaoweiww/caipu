@@ -1,0 +1,14 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "家庭私厨",
+    "navigationBarBackgroundColor": "#B5453A",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#FDFAF5",
+    "backgroundTextStyle": "light"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
