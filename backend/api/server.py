@@ -9,6 +9,14 @@ app = Flask(__name__)
 app.json.ensure_ascii = False
 CORS(app)
 
+# 全局禁止缓存 — 解决 emoji 等数据的浏览器缓存问题
+@app.after_request
+def no_cache(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
 # 图片上传目录
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'uploads')
 os.makedirs(UPLOAD_DIR, exist_ok=True)
