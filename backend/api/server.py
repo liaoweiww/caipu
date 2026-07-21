@@ -6,6 +6,7 @@ from flask import Flask, jsonify, send_from_directory, request, make_response
 from flask_cors import CORS
 
 app = Flask(__name__)
+app.json.ensure_ascii = False
 CORS(app)
 
 # 图片上传目录
