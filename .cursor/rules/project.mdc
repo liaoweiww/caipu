@@ -1,0 +1,31 @@
+---
+description: 家庭私厨项目规则——架构约定（小程序壳+index.html SPA+Flask 后端）、必守规范（ensure_ascii=False/utf8mb4/三层数据隔离）、核心业务逻辑（用量换算优先级、OpenID 身份体系）
+alwaysApply: true
+---
+
+# 家庭私厨 · 项目规则
+
+## 项目定位
+家庭私厨小程序：家庭共享菜谱 + 智能买菜 + 家宴配菜一体化工具。纯工具、无广告、数据家庭内共享。
+
+## 架构
+- **前端**：微信小程序 `web-view` 方案。`miniprogram/` 只是壳（仅 `pages/index` 一个页面），真实前端是根目录 `index.html` 单页 SPA（约 436KB）。
+- **后端**：Flask 3.x + PyMySQL（`backend/`），REST API，蓝图按领域拆分。
+- **数据库**：MySQL 库 `caipu_app`，字符集 utf8mb4，13 张表（`init.sql` 建表）。
+
+## 必须遵守的约定
+- 所有 JSON 响应必须 `ensure_ascii=False`，否则中文 / emoji 会乱码。
+- 数据库表 / 字段一律 utf8mb4（食材图标是 emoji，不能因字符集乱码）。
+- 数据三层隔离：个人私有（`tenant_id = NULL`）/ 家庭共享（`tenant_id` = 家庭ID）/ 系统公共。
+- 数据库连接信息从环境变量读取（`CAIPU_DB_HOST/USER/PASSWORD/PORT/NAME`），禁止硬编码密码。
+- `init.sql` 与 `backend/data/database.py` 的表结构必须保持一致，改一处要同步另一处。
+
+## 核心业务逻辑（不可改动）
+- **用量换算优先级**：主食重量精准换算 > 用餐人数换算（需求文档 2.2 节铁规）。
+- **身份体系**：微信静默授权拿 OpenID，`users.id = OpenID`；家庭分「户主 / 普通成员」两级权限。
+
+## 目录约定
+- `backend/api/*.py` —— 各领域蓝图（recipes/ingredients/meal_plans/purchases/feasts/users/checkins/tenants）
+- `backend/data/database.py` —— 统一 DB 连接，勿另起连接
+- `backend/data/seed_data.py` —— 192 条系统食材种子
+- `backend/uploads/` —— 图片上传目录（已从 Cursor 索引排除）

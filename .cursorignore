@@ -1,0 +1,12 @@
+# 图片上传目录（135MB 二进制，无需索引，且会拖慢 Cursor 索引速度）
+backend/uploads/
+
+# 数据库历史备份（十几份 .sql，历史快照，无需索引）
+backend/data/*.sql
+
+# Python 缓存
+**/__pycache__/
+**/*.pyc
+
+# macOS
+.DS_Store
